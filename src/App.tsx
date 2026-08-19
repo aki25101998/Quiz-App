@@ -4,6 +4,7 @@ import Home from './pages/Home';
 import Quiz from './pages/Quiz';
 import Payment from './pages/Payment';
 import Result from './pages/Result';
+import Login from './pages/Login';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <div className="relative z-10">
           <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
           <Route path="/quiz/:id" element={<Quiz />} />
           <Route path="/checkout/:id" element={<Payment />} />
           <Route path="/result/:id" element={<Result />} />
