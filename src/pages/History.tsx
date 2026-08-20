@@ -11,6 +11,7 @@ type QuizResult = {
   quiz_id: string;
   created_at: string;
   is_paid: boolean;
+  answers: Record<string, string | number>;
 };
 
 export default function History() {
@@ -31,7 +32,7 @@ export default function History() {
       
       const { data, error } = await supabase
         .from('quiz_results')
-        .select('id, quiz_id, created_at, is_paid')
+        .select('id, quiz_id, created_at, is_paid, answers')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
         
@@ -100,7 +101,7 @@ export default function History() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
                 className="group bg-white/90 backdrop-blur-xl p-6 rounded-2xl border border-white/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
-                onClick={() => navigate(`/result/${result.quiz_id}`)}
+                onClick={() => navigate(`/result/${result.quiz_id}`, { state: { answers: result.answers, paid: result.is_paid } })}
               >
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
