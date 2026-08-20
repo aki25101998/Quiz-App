@@ -5,6 +5,7 @@ import Quiz from './pages/Quiz';
 import Payment from './pages/Payment';
 import Result from './pages/Result';
 import Login from './pages/Login';
+import History from './pages/History';
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
           <Route path="/quiz/:id" element={<Quiz />} />
           <Route path="/checkout/:id" element={<Payment />} />
           <Route path="/result/:id" element={<Result />} />
+          <Route path="/history" element={<History />} />
         </Routes>
         </div>
       </div>
