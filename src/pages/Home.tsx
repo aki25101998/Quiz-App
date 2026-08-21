@@ -104,14 +104,22 @@ export default function Home() {
                   </div>
 
                   <h3 className="text-xl md:text-2xl font-bold text-slate-800 mb-3">{quiz.title}</h3>
-                  <p className="text-slate-600 flex-grow mb-8 text-sm md:text-base leading-relaxed">{quiz.description}</p>
+                  <p className="text-slate-600 flex-grow mb-6 text-sm md:text-base leading-relaxed">{quiz.description}</p>
                   
                   <div className="flex items-center justify-between mt-auto">
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2.5 py-1 rounded-md text-xs font-semibold bg-white/60 shadow-sm border border-white/40 ${bgClass.match(/text-\w+-600/)?.[0]}`}>
+                        {quiz.questions.length} câu hỏi
+                      </span>
+                      <span className="text-slate-400 text-xs">
+                        ~ {Math.ceil(quiz.questions.length * 0.3)} phút
+                      </span>
+                    </div>
                     <Link 
                       to={`/quiz/${quiz.id}`}
                       className={`font-bold text-sm group-hover:translate-x-2 transition-transform flex items-center ${bgClass.match(/text-\w+-600/)?.[0]}`}
                     >
-                      Bắt đầu bài test <span className="ml-2">→</span>
+                      Bắt đầu <span className="ml-1 md:ml-2">→</span>
                     </Link>
                   </div>
                   <Link to={`/quiz/${quiz.id}`} className="absolute inset-0 z-10" aria-label={`Làm bài ${quiz.title}`}></Link>
@@ -149,14 +157,22 @@ export default function Home() {
                   </div>
 
                   <h3 className="text-xl md:text-2xl font-bold text-slate-800 mb-3">{quiz.title}</h3>
-                  <p className="text-slate-600 flex-grow mb-8 text-sm md:text-base leading-relaxed">{quiz.description}</p>
+                  <p className="text-slate-600 flex-grow mb-6 text-sm md:text-base leading-relaxed">{quiz.description}</p>
                   
                   <div className="flex items-center justify-between mt-auto">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-1 rounded-md text-xs font-semibold bg-white/60 shadow-sm border border-white/40 text-orange-600">
+                        {quiz.questions.length} câu hỏi
+                      </span>
+                      <span className="text-slate-400 text-xs">
+                        ~ {Math.ceil(quiz.questions.length * 0.2)} phút
+                      </span>
+                    </div>
                     <Link 
                       to={`/quiz/${quiz.id}`}
                       className="font-bold text-orange-600 text-sm group-hover:translate-x-2 transition-transform flex items-center"
                     >
-                      Chơi ngay <span className="ml-2">→</span>
+                      Chơi ngay <span className="ml-1 md:ml-2">→</span>
                     </Link>
                   </div>
                   <Link to={`/quiz/${quiz.id}`} className="absolute inset-0 z-10" aria-label={`Chơi ngay ${quiz.title}`}></Link>
