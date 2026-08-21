@@ -22,6 +22,9 @@ export default function Navbar() {
       <div>
         {user ? (
           <div className="flex items-center gap-6">
+            <Link to="/guide" className="text-sm font-medium text-slate-600 hover:text-teal-600 transition-colors hidden sm:block">
+              Hướng dẫn
+            </Link>
             <Link to="/history" className="text-sm font-medium text-slate-600 hover:text-orange-500 transition-colors hidden md:block">
               Lịch sử bài làm
             </Link>
@@ -45,17 +48,22 @@ export default function Navbar() {
             </button>
           </div>
         ) : (
-          <button
-            onClick={handleLogin}
-            className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-slate-800 hover:bg-slate-900 rounded-full transition-colors shadow-sm"
-          >
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-              <polyline points="10 17 15 12 10 7" />
-              <line x1="15" y1="12" x2="3" y2="12" />
-            </svg>
-            Đăng nhập / Đăng ký
-          </button>
+          <div className="flex items-center gap-4">
+            <Link to="/guide" className="text-sm font-medium text-slate-600 hover:text-teal-600 transition-colors hidden sm:block">
+              Hướng dẫn
+            </Link>
+            <button
+              onClick={handleLogin}
+              className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-slate-800 hover:bg-slate-900 rounded-full transition-colors shadow-sm"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                <polyline points="10 17 15 12 10 7" />
+                <line x1="15" y1="12" x2="3" y2="12" />
+              </svg>
+              Đăng nhập / Đăng ký
+            </button>
+          </div>
         )}
       </div>
     </nav>

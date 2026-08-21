@@ -5,6 +5,7 @@ import { ChevronRight, Clock, FileText, CheckCircle, AlertCircle } from 'lucide-
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
 import { QUIZ_DATA } from '../data/quizData';
+import { aggregateCareerResults } from '../utils/careerAggregator';
 
 type QuizResult = {
   id: string;
@@ -62,9 +63,72 @@ export default function History() {
         animate={{ opacity: 1, y: 0 }}
         className="mb-8"
       >
-        <h1 className="text-3xl font-bold text-slate-800 mb-2">Lịch sử làm bài</h1>
-        <p className="text-slate-600">Xem lại các bài trắc nghiệm bạn đã hoàn thành</p>
+        <h1 className="text-3xl font-bold text-slate-800 mb-2">Lịch sử làm bài & Phân tích</h1>
+        <p className="text-slate-600">Theo dõi hành trình và xem định hướng tổng hợp của bạn</p>
       </motion.div>
+
+      {results.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="mb-12 bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-8 md:p-10 text-white shadow-xl relative overflow-hidden"
+        >
+          <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/20 blur-[80px] rounded-full pointer-events-none"></div>
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-orange-500/20 blur-[80px] rounded-full pointer-events-none"></div>
+          
+          <div className="relative z-10">
+            <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
+              <span className="text-teal-400">AI</span> Career Advisor
+            </h2>
+            
+            {(() => {
+              const summary = aggregateCareerResults(results);
+              return (
+                <div className="mt-6">
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="w-full bg-slate-700 rounded-full h-2">
+                      <div 
+                        className="bg-teal-400 h-2 rounded-full transition-all duration-1000"
+                        style={{ width: `${(summary.completionRate / 4) * 100}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-sm font-bold text-teal-400 whitespace-nowrap">{summary.completionRate}/4 Core</span>
+                  </div>
+                  
+                  <div className="bg-white/10 rounded-2xl p-6 backdrop-blur-sm border border-white/10 mb-6">
+                    <h3 className="text-lg font-semibold text-white mb-2">{summary.statusMessage}</h3>
+                    <p className="text-slate-300 leading-relaxed">{summary.advice}</p>
+                  </div>
+
+                  {summary.completionRate > 1 && summary.recommendedCareers.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Nghề nghiệp đề xuất (Dựa trên dữ liệu hiện có)</h4>
+                      <div className="flex flex-wrap gap-3">
+                        {summary.recommendedCareers.map((career, idx) => (
+                          <span key={idx} className="px-4 py-2 rounded-full bg-orange-500/20 text-orange-300 border border-orange-500/30 text-sm font-medium">
+                            {career}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {summary.completionRate < 4 && (
+                    <div className="mt-8 text-center md:text-left">
+                      <Link 
+                        to={`/quiz/${summary.missingCore[0]}`}
+                        className="inline-flex items-center justify-center px-6 py-3 bg-teal-500 hover:bg-teal-400 text-slate-900 font-bold rounded-full transition-colors shadow-lg shadow-teal-500/20"
+                      >
+                        Tiếp tục hành trình <ChevronRight size={18} className="ml-1" />
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+        </motion.div>
+      )}
 
       {results.length === 0 ? (
         <motion.div 
