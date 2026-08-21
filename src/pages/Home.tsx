@@ -1,13 +1,14 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { Compass, BrainCircuit, Users, Gem, Sparkles } from 'lucide-react';
 import { QUIZ_DATA } from '../data/quizData';
 
 export default function Home() {
   const coreQuizzes = [
-    QUIZ_DATA['riasec'],
-    QUIZ_DATA['ability'],
-    QUIZ_DATA['big-five'],
-    QUIZ_DATA['work-values']
+    { ...QUIZ_DATA['riasec'], icon: Compass, color: 'teal' },
+    { ...QUIZ_DATA['ability'], icon: BrainCircuit, color: 'indigo' },
+    { ...QUIZ_DATA['big-five'], icon: Users, color: 'rose' },
+    { ...QUIZ_DATA['work-values'], icon: Gem, color: 'amber' }
   ];
 
   const funQuizzes = [
@@ -68,28 +69,49 @@ export default function Home() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
             {coreQuizzes.map((quiz, index) => {
-              if (!quiz) return null;
+              if (!quiz.id) return null;
+              
+              const Icon = quiz.icon;
+              const colorVariants: Record<string, string> = {
+                teal: 'from-teal-50 to-white/70 border-teal-100/60 hover:border-teal-300 text-teal-600',
+                indigo: 'from-indigo-50 to-white/70 border-indigo-100/60 hover:border-indigo-300 text-indigo-600',
+                rose: 'from-rose-50 to-white/70 border-rose-100/60 hover:border-rose-300 text-rose-600',
+                amber: 'from-amber-50 to-white/70 border-amber-100/60 hover:border-amber-300 text-amber-600'
+              };
+              
+              const bgClass = colorVariants[quiz.color] || colorVariants.teal;
+
               return (
                 <motion.div
                   key={quiz.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4 + index * 0.1 }}
-                  whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                  className="bg-white/70 backdrop-blur-xl rounded-[2rem] p-8 shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-teal-100/50 flex flex-col group relative overflow-hidden"
+                  whileHover={{ y: -6, scale: 1.01, transition: { duration: 0.2 } }}
+                  className={`bg-gradient-to-br backdrop-blur-xl rounded-[2rem] p-8 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border flex flex-col group relative overflow-hidden ${bgClass.split(' text-')[0]}`}
                 >
-                  <div className="text-xs font-bold text-teal-600 mb-2 uppercase tracking-wide">
-                    Bước {index + 1}
+                  <div className="absolute top-0 right-0 p-6 opacity-5 transform translate-x-4 -translate-y-4 group-hover:scale-110 transition-transform duration-500">
+                    <Icon className="w-32 h-32" />
                   </div>
-                  <h3 className="text-xl md:text-2xl font-bold text-slate-800 mb-2">{quiz.title}</h3>
-                  <p className="text-slate-500 flex-grow mb-8 text-sm md:text-base">{quiz.description}</p>
+                  
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center bg-white shadow-sm text-${quiz.color}-500`}>
+                      <Icon className="w-6 h-6" />
+                    </div>
+                    <div className={`text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full bg-white/60 shadow-sm ${bgClass.match(/text-\w+-600/)?.[0]}`}>
+                      Bước {index + 1}
+                    </div>
+                  </div>
+
+                  <h3 className="text-xl md:text-2xl font-bold text-slate-800 mb-3">{quiz.title}</h3>
+                  <p className="text-slate-600 flex-grow mb-8 text-sm md:text-base leading-relaxed">{quiz.description}</p>
                   
                   <div className="flex items-center justify-between mt-auto">
                     <Link 
                       to={`/quiz/${quiz.id}`}
-                      className="text-teal-600 font-medium text-sm group-hover:translate-x-1 transition-transform flex items-center"
+                      className={`font-bold text-sm group-hover:translate-x-2 transition-transform flex items-center ${bgClass.match(/text-\w+-600/)?.[0]}`}
                     >
-                      Làm bài <span className="ml-1">→</span>
+                      Bắt đầu bài test <span className="ml-2">→</span>
                     </Link>
                   </div>
                   <Link to={`/quiz/${quiz.id}`} className="absolute inset-0 z-10" aria-label={`Làm bài ${quiz.title}`}></Link>
@@ -115,18 +137,26 @@ export default function Home() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.6 + index * 0.1 }}
-                  whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                  className="bg-white/70 backdrop-blur-xl rounded-[2rem] p-8 shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-orange-100/50 flex flex-col group relative overflow-hidden"
+                  whileHover={{ y: -6, scale: 1.02, transition: { duration: 0.2 } }}
+                  className="bg-gradient-to-br from-orange-50 to-white/80 backdrop-blur-xl rounded-[2rem] p-8 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-orange-100/60 flex flex-col group relative overflow-hidden"
                 >
-                  <h3 className="text-xl md:text-2xl font-bold text-slate-800 mb-2">{quiz.title}</h3>
-                  <p className="text-slate-500 flex-grow mb-8 text-sm md:text-base">{quiz.description}</p>
+                  <div className="absolute top-0 right-0 p-6 opacity-5 transform translate-x-4 -translate-y-4 group-hover:rotate-12 transition-transform duration-500">
+                    <Sparkles className="w-24 h-24 text-orange-500" />
+                  </div>
+                  
+                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-white shadow-sm text-orange-500 mb-4">
+                    <span className="text-2xl">🎭</span>
+                  </div>
+
+                  <h3 className="text-xl md:text-2xl font-bold text-slate-800 mb-3">{quiz.title}</h3>
+                  <p className="text-slate-600 flex-grow mb-8 text-sm md:text-base leading-relaxed">{quiz.description}</p>
                   
                   <div className="flex items-center justify-between mt-auto">
                     <Link 
                       to={`/quiz/${quiz.id}`}
-                      className="text-orange-600 font-medium text-sm group-hover:translate-x-1 transition-transform flex items-center"
+                      className="font-bold text-orange-600 text-sm group-hover:translate-x-2 transition-transform flex items-center"
                     >
-                      Chơi ngay <span className="ml-1">→</span>
+                      Chơi ngay <span className="ml-2">→</span>
                     </Link>
                   </div>
                   <Link to={`/quiz/${quiz.id}`} className="absolute inset-0 z-10" aria-label={`Chơi ngay ${quiz.title}`}></Link>
