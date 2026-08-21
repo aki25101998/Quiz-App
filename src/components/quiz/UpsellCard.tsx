@@ -29,6 +29,10 @@ export const UpsellCard: React.FC<UpsellCardProps> = ({ currentQuizId }) => {
     nextQuizId = 'work-values';
     title = 'Một công việc phù hợp chưa chắc đã làm bạn hạnh phúc.';
     description = 'Bài test Giá trị công việc sẽ giúp bạn tìm ra điều bạn thực sự coi trọng: Tiền bạc, Tự do hay Sáng tạo?';
+  } else if (currentQuizId === 'mbti') {
+    nextQuizId = 'riasec';
+    title = 'MBTI chỉ là khởi đầu. Bạn có muốn biết nghề nghiệp thực sự của mình?';
+    description = 'Hãy bắt đầu Hành trình Khám phá Nghề nghiệp với bài test RIASEC - chuẩn mực vàng trong định hướng nghề nghiệp.';
   } else {
     // If all tests are done, upsell premium report
     return (

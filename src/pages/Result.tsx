@@ -76,9 +76,11 @@ export default function Result() {
               </div>
             </div>
 
-            {/* Top Nghề Nghiệp */}
+            {/* Kết quả chính (Nghề nghiệp hoặc Tính cách) */}
             <div>
-              <h3 className="text-xl font-bold text-slate-800 mb-6">Nghề nghiệp phù hợp nhất</h3>
+              <h3 className="text-xl font-bold text-slate-800 mb-6">
+                {quiz.type === 'fun' ? 'Kết quả chi tiết' : 'Nghề nghiệp phù hợp nhất'}
+              </h3>
               <div className="space-y-4">
                 {matchResult.topCareers.map((career, idx) => (
                   <motion.div 
@@ -86,19 +88,23 @@ export default function Result() {
                     whileHover={{ scale: 1.02 }}
                     className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm relative overflow-hidden"
                   >
-                    {idx === 0 && (
+                    {idx === 0 && quiz.type !== 'fun' && (
                       <div className="absolute top-0 right-0 px-3 py-1 bg-yellow-100 text-yellow-800 text-xs font-bold rounded-bl-lg">
                         TOP 1
                       </div>
                     )}
                     <div className="flex justify-between items-start mb-2">
                       <h4 className="font-bold text-lg text-slate-800">{career.name}</h4>
-                      <span className="font-bold text-teal-600">{career.score}%</span>
+                      {quiz.type !== 'fun' && (
+                        <span className="font-bold text-teal-600">{career.score}%</span>
+                      )}
                     </div>
-                    <div className="w-full bg-slate-100 rounded-full h-1.5 mb-3">
-                      <div className="bg-teal-500 h-1.5 rounded-full" style={{ width: `${career.score}%` }}></div>
-                    </div>
-                    <p className="text-sm text-slate-600">{career.description}</p>
+                    {quiz.type !== 'fun' && (
+                      <div className="w-full bg-slate-100 rounded-full h-1.5 mb-3">
+                        <div className="bg-teal-500 h-1.5 rounded-full" style={{ width: `${career.score}%` }}></div>
+                      </div>
+                    )}
+                    <p className="text-sm text-slate-600 whitespace-pre-line">{career.description}</p>
                   </motion.div>
                 ))}
               </div>

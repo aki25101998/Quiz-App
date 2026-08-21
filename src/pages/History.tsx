@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { ChevronRight, Clock, FileText, CheckCircle, AlertCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
-import { quizzes } from '../data/quizzes';
+import { QUIZ_DATA } from '../data/quizData';
 
 type QuizResult = {
   id: string;
@@ -88,7 +88,7 @@ export default function History() {
       ) : (
         <div className="space-y-4">
           {results.map((result, index) => {
-            const quizInfo = quizzes.find(q => q.id === result.quiz_id);
+            const quizInfo = QUIZ_DATA[result.quiz_id];
             const date = new Date(result.created_at).toLocaleDateString('vi-VN', {
               year: 'numeric', month: 'long', day: 'numeric',
               hour: '2-digit', minute: '2-digit'

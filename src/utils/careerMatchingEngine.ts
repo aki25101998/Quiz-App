@@ -1,3 +1,6 @@
+import { mbtiResults } from '../data/mbtiResults';
+import { mbtiQuestions } from '../data/mbtiQuestions';
+
 export interface CareerMatchResult {
   topCareers: {
     name: string;
@@ -26,6 +29,37 @@ export function calculateCareerMatch(
       strengths: ['Tư duy phân tích', 'Làm việc độc lập'],
       weaknesses: ['Giao tiếp trước đám đông'],
       personalityTraits: ['Thích tìm tòi', 'Thực tế']
+    };
+  }
+
+  if (quizId === 'mbti') {
+    let axes: Record<string, number> = { EI: 0, SN: 0, TF: 0, JP: 0 };
+    Object.entries(answers).forEach(([qId, valStr]) => {
+      const val = parseInt(valStr);
+      if (isNaN(val)) return;
+      const question = mbtiQuestions.find(q => q.id.toString() === qId);
+      if (question) {
+        // 5: +2, 4: +1, 3: 0, 2: -1, 1: -2
+        const score = (val - 3) * question.direction;
+        axes[question.dimension] += score;
+      }
+    });
+
+    let finalMBTI = '';
+    finalMBTI += (axes.EI >= 0) ? 'E' : 'I';
+    finalMBTI += (axes.SN >= 0) ? 'S' : 'N';
+    finalMBTI += (axes.TF >= 0) ? 'T' : 'F';
+    finalMBTI += (axes.JP >= 0) ? 'J' : 'P';
+
+    const mbtiData = mbtiResults[finalMBTI] || mbtiResults['INTJ'];
+    
+    return {
+      topCareers: [
+        { name: `${finalMBTI} - ${mbtiData.name}`, score: 100, description: mbtiData.description }
+      ],
+      strengths: mbtiData.strengths,
+      weaknesses: mbtiData.weaknesses,
+      personalityTraits: []
     };
   }
 

@@ -87,7 +87,7 @@ export default function Quiz() {
             </h2>
 
             <div className="space-y-4">
-              {currentQuestion.options.map((option, idx) => (
+              {currentQuestion.options?.map((option: any, idx: number) => (
                 <motion.button
                   key={idx}
                   whileHover={{ scale: 1.02 }}

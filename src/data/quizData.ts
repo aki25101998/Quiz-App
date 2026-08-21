@@ -8,15 +8,46 @@ export interface QuizQuestion {
   }[];
 }
 
+export interface LikertQuestionDef {
+  id: number;
+  text: string;
+  dimension: 'EI' | 'SN' | 'TF' | 'JP';
+  direction: 1 | -1;
+}
+
 export interface QuizConfig {
   id: string;
   title: string;
   description: string;
-  questions: QuizQuestion[];
-  type: 'riasec' | 'ability' | 'big-five' | 'work-values';
+  emoji?: string;
+  questions: QuizQuestion[] | any[]; // any for Likert until we unify
+  type: 'riasec' | 'ability' | 'big-five' | 'work-values' | 'fun';
+  originalType?: 'likert' | 'choice';
 }
 
+import { mbtiQuestions } from './mbtiQuestions';
+
+const mappedMbtiQuestions: QuizQuestion[] = mbtiQuestions.map((q) => ({
+  id: q.id.toString(),
+  text: q.text,
+  options: [
+    { label: 'Hoàn toàn đồng ý', value: '5' },
+    { label: 'Hơi đồng ý', value: '4' },
+    { label: 'Bình thường', value: '3' },
+    { label: 'Hơi không đồng ý', value: '2' },
+    { label: 'Hoàn toàn không đồng ý', value: '1' }
+  ]
+}));
+
 export const QUIZ_DATA: Record<string, QuizConfig> = {
+  mbti: {
+    id: 'mbti',
+    title: 'Trắc nghiệm MBTI (16 nhóm tính cách)',
+    description: 'Bài test vui khám phá bạn thuộc nhóm tính cách nào trong 16 nhóm MBTI.',
+    type: 'fun',
+    originalType: 'likert',
+    questions: mappedMbtiQuestions
+  },
   riasec: {
     id: 'riasec',
     title: 'Sở thích nghề nghiệp (RIASEC)',
