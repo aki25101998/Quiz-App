@@ -1,168 +1,115 @@
-import { useLocation, Link, Navigate, useParams } from 'react-router-dom';
+import { useLocation, Navigate, useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Home, Share2, Award, ArrowRight, Sparkles } from 'lucide-react';
-import { quizzes } from '../data/quizzes';
-import { mbtiResults } from '../data/mbtiResults';
+import { calculateCareerMatch } from '../utils/careerMatchingEngine';
+import { UpsellCard } from '../components/quiz/UpsellCard';
+import { QUIZ_DATA } from '../data/quizData';
 
 export default function Result() {
   const { id } = useParams();
   const location = useLocation();
-  const answers = location.state?.answers || {};
-  const paid = location.state?.paid || false;
-  const quiz = quizzes.find((q) => q.id === id);
+  const quiz = QUIZ_DATA[id || ''];
+  const answers = location.state?.answers;
+  const isPaid = location.state?.paid;
 
-  if (!paid) {
+  if (!quiz) return <div className="text-center py-20">Quiz không tồn tại</div>;
+
+  // Protect route
+  if (!answers || !isPaid) {
     return <Navigate to={`/checkout/${id}`} state={{ answers }} replace />;
   }
 
-  if (!quiz) return <div>Quiz không tồn tại</div>;
-
-  // Simple logic to determine result: find the most frequent value for normal quizzes
-  const counts: Record<string, number> = {};
-  Object.values(answers).forEach((val) => {
-    counts[val as string] = (counts[val as string] || 0) + 1;
-  });
-
-  let resultTitle = '';
-  let resultDescription = '';
-  let resultStrengths: string[] = [];
-  let resultWeaknesses: string[] = [];
-
-  if (id === 'mbti') {
-    let axes: Record<string, number> = { EI: 0, SN: 0, TF: 0, JP: 0 };
-
-    if (quiz?.type === 'likert') {
-      Object.entries(answers).forEach(([qId, val]) => {
-        const question = quiz.questions.find(q => q.id === parseInt(qId)) as any;
-        if (question && typeof val === 'number') {
-           axes[question.dimension] += (val * question.direction);
-        }
-      });
-    }
-
-    let finalMBTI = '';
-    finalMBTI += (axes.EI >= 0) ? 'E' : 'I';
-    finalMBTI += (axes.SN >= 0) ? 'S' : 'N';
-    finalMBTI += (axes.TF >= 0) ? 'T' : 'F';
-    finalMBTI += (axes.JP >= 0) ? 'J' : 'P';
-
-    const mbtiData = mbtiResults[finalMBTI] || mbtiResults['INTJ'];
-    resultTitle = `${finalMBTI} - ${mbtiData.name}`;
-    resultDescription = mbtiData.description;
-    resultStrengths = mbtiData.strengths;
-    resultWeaknesses = mbtiData.weaknesses;
-  } else {
-    let maxVal = '';
-    let maxCount = -1;
-    Object.entries(counts).forEach(([val, count]) => {
-      if (count > maxCount) {
-        maxCount = count;
-        maxVal = val;
-      }
-    });
-
-    resultTitle = {
-      riasec: `Nhóm nghề: ${maxVal || 'Linh hoạt'}`,
-      disc: `Phong cách: ${maxVal || 'Thích ứng'}`,
-      enneagram: `Động lực chính: Loại ${maxVal || 'Trung bình'}`,
-      mi: `Trí thông minh: ${maxVal || 'Đa dạng'}`
-    }[id as string] || 'Kết quả của bạn';
-
-    resultDescription = "Dựa trên các câu trả lời của bạn, chúng tôi nhận thấy bạn là một người có tư duy độc lập và khả năng thích ứng cao. Bạn thường có xu hướng phân tích vấn đề một cách thấu đáo trước khi đưa ra quyết định. Tuy nhiên, trong những tình huống đòi hỏi sự sáng tạo, bạn cũng thể hiện được sự linh hoạt đáng kinh ngạc.";
-  }
-
-  const upsellQuiz = quiz.upsellQuizId ? quizzes.find(q => q.id === quiz.upsellQuizId) : null;
+  const matchResult = calculateCareerMatch(id || '', answers);
 
   return (
-    <div className="min-h-screen py-12 px-4 flex flex-col items-center justify-center relative">
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5, type: "spring" }}
-        className="max-w-3xl w-full bg-white/90 backdrop-blur-xl rounded-[2rem] p-8 md:p-12 border border-white/50 shadow-[0_8px_30px_rgb(0,0,0,0.06)] text-center relative z-10"
-      >
-        <div className="mx-auto w-20 h-20 bg-teal-50 rounded-full flex items-center justify-center mb-6 shadow-inner">
-          <Award className="w-10 h-10 text-teal-500" />
-        </div>
-        
-        <h2 className="text-xl md:text-2xl text-slate-500 font-medium mb-2">{quiz.title}</h2>
-        <h1 className="text-4xl md:text-5xl font-extrabold mb-8 text-slate-800">
-          {resultTitle}
-        </h1>
-
-        <div className="bg-[#f8f7f5] rounded-2xl p-6 md:p-8 mb-8 text-left border border-[#e6e2d6]">
-          <h3 className="text-2xl font-bold mb-4 text-slate-800">Phân tích chi tiết:</h3>
-          <p className="text-slate-600 leading-relaxed text-lg mb-6 whitespace-pre-line">
-            {resultDescription}
-          </p>
-          
-          {id === 'mbti' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-              <div className="bg-green-50/50 p-4 rounded-xl border border-green-100">
-                <h4 className="font-bold text-green-700 mb-2 flex items-center">
-                  <span className="mr-2">✨</span> Điểm mạnh
-                </h4>
-                <ul className="list-disc list-inside text-slate-600 space-y-1">
-                  {resultStrengths.map((s, i) => <li key={i}>{s}</li>)}
-                </ul>
-              </div>
-              <div className="bg-red-50/50 p-4 rounded-xl border border-red-100">
-                <h4 className="font-bold text-red-700 mb-2 flex items-center">
-                  <span className="mr-2">⚡</span> Điểm yếu
-                </h4>
-                <ul className="list-disc list-inside text-slate-600 space-y-1">
-                  {resultWeaknesses.map((w, i) => <li key={i}>{w}</li>)}
-                </ul>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Upsell Ecosystem Block */}
-        {upsellQuiz && (
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="bg-gradient-to-br from-orange-50 to-teal-50 rounded-2xl p-6 md:p-8 mb-10 text-left border border-teal-100 shadow-inner relative overflow-hidden group"
+    <div className="w-full flex flex-col items-center">
+      <div className="w-full max-w-4xl relative z-10">
+        <div className="mb-6">
+          <Link 
+            to="/" 
+            className="inline-block text-slate-500 hover:text-slate-800 transition-colors text-sm font-medium"
           >
-            <div className="absolute top-0 right-0 p-4 opacity-10 transform translate-x-4 -translate-y-4 group-hover:scale-110 transition-transform duration-500">
-              <Sparkles className="w-32 h-32 text-teal-600" />
-            </div>
-            
-            <div className="relative z-10">
-              <div className="inline-block px-3 py-1 bg-white text-orange-600 font-bold text-xs rounded-full mb-4 shadow-sm border border-orange-100 uppercase tracking-wider">
-                Bước tiếp theo
-              </div>
-              <h3 className="text-xl font-bold mb-3 text-slate-800">
-                Để bức tranh tính cách của bạn hoàn thiện 100%...
-              </h3>
-              <p className="text-slate-600 leading-relaxed mb-6 font-medium">
-                {quiz.upsellMessage}
-              </p>
-              
-              <Link 
-                to={`/quiz/${upsellQuiz.id}`}
-                className="inline-flex items-center justify-center px-6 py-3 rounded-full font-bold text-white lovable-gradient-btn shadow-md hover:shadow-lg transition-all w-full sm:w-auto"
-              >
-                Tiếp tục khám phá {upsellQuiz.title}
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </Link>
-            </div>
-          </motion.div>
-        )}
-
-        <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
-          <button className="py-4 px-8 rounded-full font-bold text-white lovable-gradient-btn shadow-lg shadow-orange-500/20 flex items-center justify-center">
-            <Share2 className="w-5 h-5 mr-2" />
-            Chia sẻ kết quả
-          </button>
-          <Link to="/" className="py-4 px-8 rounded-full font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors flex items-center justify-center">
-            <Home className="w-5 h-5 mr-2" />
-            Về trang chủ
+            ← Về trang chủ
           </Link>
         </div>
-      </motion.div>
+
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass-panel p-8 md:p-12 mb-8"
+        >
+          <div className="text-center mb-12">
+            <h1 className="text-3xl md:text-5xl font-bold text-slate-800 mb-4 tracking-tight">
+              Kết quả <span className="lovable-gradient-text">{quiz.title}</span>
+            </h1>
+            <p className="text-slate-500 text-lg">Dựa trên những gì bạn đã trả lời, đây là phân tích dành riêng cho bạn.</p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* Điểm mạnh & Điểm yếu */}
+            <div className="space-y-6">
+              <div className="bg-teal-50/50 rounded-2xl p-6 border border-teal-100">
+                <h3 className="text-lg font-bold text-teal-900 mb-4 flex items-center gap-2">
+                  <span className="text-2xl">💪</span> Điểm mạnh của bạn
+                </h3>
+                <ul className="space-y-2">
+                  {matchResult.strengths.map((s, i) => (
+                    <li key={i} className="flex items-start gap-2 text-slate-700">
+                      <div className="w-1.5 h-1.5 rounded-full bg-teal-500 mt-2"></div>
+                      <span>{s}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="bg-orange-50/50 rounded-2xl p-6 border border-orange-100">
+                <h3 className="text-lg font-bold text-orange-900 mb-4 flex items-center gap-2">
+                  <span className="text-2xl">🎯</span> Cần lưu ý
+                </h3>
+                <ul className="space-y-2">
+                  {matchResult.weaknesses.map((w, i) => (
+                    <li key={i} className="flex items-start gap-2 text-slate-700">
+                      <div className="w-1.5 h-1.5 rounded-full bg-orange-400 mt-2"></div>
+                      <span>{w}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            {/* Top Nghề Nghiệp */}
+            <div>
+              <h3 className="text-xl font-bold text-slate-800 mb-6">Nghề nghiệp phù hợp nhất</h3>
+              <div className="space-y-4">
+                {matchResult.topCareers.map((career, idx) => (
+                  <motion.div 
+                    key={idx}
+                    whileHover={{ scale: 1.02 }}
+                    className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm relative overflow-hidden"
+                  >
+                    {idx === 0 && (
+                      <div className="absolute top-0 right-0 px-3 py-1 bg-yellow-100 text-yellow-800 text-xs font-bold rounded-bl-lg">
+                        TOP 1
+                      </div>
+                    )}
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="font-bold text-lg text-slate-800">{career.name}</h4>
+                      <span className="font-bold text-teal-600">{career.score}%</span>
+                    </div>
+                    <div className="w-full bg-slate-100 rounded-full h-1.5 mb-3">
+                      <div className="bg-teal-500 h-1.5 rounded-full" style={{ width: `${career.score}%` }}></div>
+                    </div>
+                    <p className="text-sm text-slate-600">{career.description}</p>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Upsell Section */}
+        <UpsellCard currentQuizId={id || ''} />
+
+      </div>
     </div>
   );
 }

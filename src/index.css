@@ -1,23 +1,37 @@
 @import "tailwindcss";
 
+@theme {
+  --color-pastel-teal: #ccfbf1;
+  --color-pastel-orange: #ffedd5;
+  --color-pastel-slate: #f8fafc;
+  --color-teal-500: #14b8a6;
+  --color-orange-500: #f97316;
+}
+
 @layer base {
   * {
     @apply border-slate-200;
   }
   body {
-    @apply bg-[#f6f7f2] text-slate-800 antialiased selection:bg-orange-200 selection:text-orange-900;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    @apply bg-[#f8fafc] text-slate-800 antialiased selection:bg-orange-200 selection:text-orange-900;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
 }
 
 @layer utilities {
+  .glass-panel {
+    @apply bg-white/90 backdrop-blur-xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-white/50 rounded-2xl;
+  }
   .glass-card {
-    @apply bg-white/90 backdrop-blur-md shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/20;
+    @apply bg-white/80 backdrop-blur-lg shadow-sm border border-white/30 rounded-xl transition-all duration-300;
+  }
+  .glass-card:hover {
+    @apply shadow-[0_8px_30px_rgb(0,0,0,0.08)] border-white/60 -translate-y-1;
   }
   .lovable-gradient-text {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-[#f97316] to-[#4ade80];
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-orange-500 to-teal-500;
   }
   .lovable-gradient-btn {
-    @apply bg-gradient-to-r from-[#f97316] to-[#60a5fa] text-white hover:opacity-90 transition-opacity;
+    @apply bg-gradient-to-r from-orange-500 to-teal-500 text-white hover:opacity-90 transition-opacity shadow-md;
   }
 }
