@@ -9,6 +9,8 @@ import Login from './pages/Login';
 import History from './pages/History';
 import Guide from './pages/Guide';
 
+import FinalReport from './pages/FinalReport';
+
 function App() {
   return (
     <Router>
@@ -20,6 +22,7 @@ function App() {
         <Route path="/quiz/:id" element={<QuizLayout><Quiz /></QuizLayout>} />
         <Route path="/checkout/:id" element={<MainLayout><Payment /></MainLayout>} />
         <Route path="/result/:id" element={<MainLayout><Result /></MainLayout>} />
+        <Route path="/report" element={<MainLayout><FinalReport /></MainLayout>} />
       </Routes>
     </Router>
   );

@@ -99,7 +99,21 @@ function scoreCareer(profile: CareerProfile, career: Career): CareerMatch | null
   if (totalWeight === 0) return null;
 
   // Normalize the weighted sum to account for missing dimensions
+  // For example, if only RIASEC is available (weight 30%), totalWeight is 30.
+  // The score will be (riasecSim * 30) / 30 = riasecSim.
+  // This effectively normalizes the available dimensions to 100%.
   const score = Math.round(weightedSum / totalWeight);
+
+  let matchLevel: CareerMatch['matchLevel'] = 'LOW';
+  if (score >= 90) matchLevel = 'VERY_HIGH';
+  else if (score >= 80) matchLevel = 'HIGH';
+  else if (score >= 70) matchLevel = 'MODERATE';
+
+  // Determine available and missing dimensions
+  const availableDimensions = Object.keys(dimensionScores);
+  const missingDimensions = ['riasec', 'ability', 'personality', 'workValues'].filter(
+    (dim) => !availableDimensions.includes(dim)
+  );
 
   // Generate explanations
   const { reasons, strengths, concerns } = generateExplanation(
@@ -113,7 +127,10 @@ function scoreCareer(profile: CareerProfile, career: Career): CareerMatch | null
     careerName: career.name,
     field: career.field,
     score,
-    confidence: profile.confidence,
+    matchLevel,
+    completeness: profile.completeness,
+    availableDimensions,
+    missingDimensions,
     reasons,
     strengths,
     concerns,
@@ -318,118 +335,10 @@ function generateExplanation(
 }
 
 // ============================================================
-// BACKWARD COMPATIBILITY — calculateCareerMatch()
-// Used by Result.tsx, keeps existing interface working
-// ============================================================
-
-export function calculateCareerMatch(
-  quizId: string,
-  answers: Record<string, string>
-): CareerMatchResult {
-  // MBTI — keep existing logic (fun quiz, separate system)
-  if (quizId === 'mbti') {
-    return calculateMbtiResult(answers);
-  }
-
-  // For core quizzes: build single-quiz profile and match
-  const profile = buildCareerProfile([{ quiz_id: quizId, answers }]);
-
-  // Run matching engine
-  const careerMatches = matchCareers(profile);
-  const topMatches = careerMatches.slice(0, 10);
-
-  // Generate RIASEC-specific info for display
-  const personalityTraits: string[] = [];
-  if (profile.riasec) {
-    personalityTraits.push(`Mã Holland của bạn là: ${profile.riasec.hollandCode}`);
-  }
-
-  // Build strengths/weaknesses from profile
-  const resultStrengths: string[] = [];
-  const resultWeaknesses: string[] = [];
-
-  if (profile.riasec) {
-    const top2 = profile.riasec.ranking.slice(0, 2);
-    for (const dim of top2) {
-      resultStrengths.push(`${RIASEC_LABELS[dim].name}: ${RIASEC_LABELS[dim].shortDesc}`);
-    }
-    const bottom2 = profile.riasec.ranking.slice(-2);
-    for (const dim of bottom2) {
-      if (profile.riasec.normalizedScores[dim] < 40) {
-        resultWeaknesses.push(`${RIASEC_LABELS[dim].name}: xu hướng thấp hơn — không phải điểm yếu, chỉ là không phải ưu tiên tự nhiên của bạn.`);
-      }
-    }
-  }
-
-  if (profile.abilities) {
-    const dims = Object.entries(profile.abilities.normalizedScores)
-      .sort(([, a], [, b]) => (b ?? 0) - (a ?? 0));
-    if (dims.length > 0 && dims[0][1] !== undefined && dims[0][1] >= 65) {
-      resultStrengths.push(`Năng lực nổi bật: ${dims[0][0]}`);
-    }
-  }
-
-  if (profile.bigFive) {
-    const { normalizedScores } = profile.bigFive;
-    if (normalizedScores.conscientiousness >= 70) {
-      resultStrengths.push('Tính kỷ luật và trách nhiệm cao');
-    }
-    if (normalizedScores.openness >= 70) {
-      resultStrengths.push('Khả năng khám phá và sáng tạo tốt');
-    }
-  }
-
-  if (profile.workValues) {
-    const topValues = profile.workValues.ranking.slice(0, 2);
-    if (topValues.length > 0) {
-      resultStrengths.push(`Giá trị cốt lõi: ${topValues.map(v => v.dimension).join(', ')}`);
-    }
-  }
-
-  // Convert to backward-compatible format
-  const topCareers = topMatches.map(m => ({
-    name: m.careerName,
-    score: m.score,
-    description: buildCareerDescription(m),
-  }));
-
-  return {
-    topCareers,
-    strengths: resultStrengths.length > 0 ? resultStrengths : ['Đang phân tích...'],
-    weaknesses: resultWeaknesses,
-    personalityTraits,
-    careerMatches: topMatches,
-    profile,
-  };
-}
-
-function buildCareerDescription(match: CareerMatch): string {
-  const parts: string[] = [];
-
-  if (match.reasons.length > 0) {
-    parts.push(match.reasons[0]);
-  }
-
-  if (match.strengths.length > 0) {
-    parts.push(match.strengths[0]);
-  }
-
-  if (match.concerns.length > 0) {
-    parts.push(`Lưu ý: ${match.concerns[0]}`);
-  }
-
-  if (parts.length === 0) {
-    parts.push(`Mức độ tương thích dựa trên hồ sơ hiện tại: ${match.score}%`);
-  }
-
-  return parts.join('\n');
-}
-
-// ============================================================
 // MBTI RESULT (kept separately — fun quiz)
 // ============================================================
 
-function calculateMbtiResult(answers: Record<string, string>): CareerMatchResult {
+export function calculateMbtiResult(answers: Record<string, string>): CareerMatchResult {
   const axes: Record<string, number> = { EI: 0, SN: 0, TF: 0, JP: 0 };
 
   Object.entries(answers).forEach(([qId, valStr]) => {

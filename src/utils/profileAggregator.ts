@@ -4,7 +4,7 @@
 // ============================================================
 
 import type { CareerProfile } from '../types/types';
-import { CONFIDENCE_BY_TESTS, CORE_QUIZ_IDS } from '../types/constants';
+import { COMPLETENESS_BY_TESTS, CORE_QUIZ_IDS } from '../types/constants';
 import { calculateRiasecScores } from './scoring/riasecScoring';
 import { calculateAbilityScores } from './scoring/abilityScoring';
 import { calculateBigFiveScores } from './scoring/bigFiveScoring';
@@ -16,6 +16,7 @@ import { workValuesQuestions } from '../data/workValuesQuestions';
 export type QuizResultInput = {
   quiz_id: string;
   answers: Record<string, string>;
+  created_at?: string;
 };
 
 /**
@@ -25,13 +26,26 @@ export type QuizResultInput = {
 export function buildCareerProfile(results: QuizResultInput[]): CareerProfile {
   const profile: CareerProfile = {
     completedTests: [],
-    confidence: 0,
+    completeness: 0,
   };
 
-  // De-duplicate: take the latest result per quiz_id
+  // De-duplicate: take the latest result per quiz_id based on created_at
   const latestByQuiz = new Map<string, QuizResultInput>();
+  
   for (const r of results) {
-    latestByQuiz.set(r.quiz_id, r); // last one wins
+    const existing = latestByQuiz.get(r.quiz_id);
+    if (!existing) {
+      latestByQuiz.set(r.quiz_id, r);
+    } else {
+      // Compare dates safely
+      const existingTime = existing.created_at ? new Date(existing.created_at).getTime() : 0;
+      const currentTime = r.created_at ? new Date(r.created_at).getTime() : 0;
+      
+      // If current is newer, or if existing time is invalid (NaN) but current is valid
+      if (currentTime > existingTime || (isNaN(existingTime) && !isNaN(currentTime))) {
+        latestByQuiz.set(r.quiz_id, r);
+      }
+    }
   }
 
   // Process RIASEC
@@ -69,11 +83,11 @@ export function buildCareerProfile(results: QuizResultInput[]): CareerProfile {
     // Just track completion
   }
 
-  // Calculate confidence based on number of core tests completed
+  // Calculate completeness based on number of core tests completed
   const coreCompleted = profile.completedTests.filter(t =>
     (CORE_QUIZ_IDS as readonly string[]).includes(t)
   ).length;
-  profile.confidence = CONFIDENCE_BY_TESTS[coreCompleted] ?? 0;
+  profile.completeness = (COMPLETENESS_BY_TESTS as Record<number, number>)[coreCompleted] ?? 0;
 
   return profile;
 }

@@ -129,7 +129,7 @@ export default function History() {
                   {summary.recommendedCareers.length > 0 && (
                     <div>
                       <h4 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">
-                        Nghề nghiệp đề xuất ({summary.profile?.confidence || 0}% chính xác)
+                        Nghề nghiệp đề xuất ({summary.profile?.completeness || 0}% hoàn thiện)
                       </h4>
                       <div className="flex flex-wrap gap-3">
                         {summary.recommendedCareers.map((career, idx) => (

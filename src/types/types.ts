@@ -75,7 +75,7 @@ export interface CareerProfile {
   workValues?: WorkValueResult;
   mbti?: string;
   completedTests: string[];
-  confidence: number; // 0-100
+  completeness: number; // 0-100, e.g., 25, 50, 75, 100
 }
 
 // ---------- CAREER DATABASE ----------
@@ -99,7 +99,10 @@ export interface CareerMatch {
   careerName: string;
   field: string;
   score: number;       // 0-100, computed from profile
-  confidence: number;  // 0-100, based on data completeness
+  matchLevel: 'VERY_HIGH' | 'HIGH' | 'MODERATE' | 'LOW';
+  completeness: number;  // 0-100, based on data completeness
+  availableDimensions: string[];
+  missingDimensions: string[];
   reasons: string[];
   strengths: string[];
   concerns: string[];

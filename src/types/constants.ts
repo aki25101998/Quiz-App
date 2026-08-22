@@ -35,8 +35,8 @@ export const CAREER_MATCH_WEIGHTS = {
   workValues: 0.20,
 } as const;
 
-// ---------- CONFIDENCE BY NUMBER OF COMPLETED TESTS ----------
-export const CONFIDENCE_BY_TESTS: Record<number, number> = {
+// ---------- COMPLETENESS BY NUMBER OF COMPLETED TESTS ----------
+export const COMPLETENESS_BY_TESTS: Record<number, number> = {
   0: 0,
   1: 25,
   2: 50,
