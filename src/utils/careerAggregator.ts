@@ -1,3 +1,5 @@
+import { calculateCareerMatch } from './careerMatchingEngine';
+
 export type QuizResultData = {
   quiz_id: string;
   answers: Record<string, any>;
@@ -29,24 +31,34 @@ export function aggregateCareerResults(results: QuizResultData[]): DashboardSumm
   let advice = '';
   let recommendedCareers: string[] = [];
 
+  // Lấy dữ liệu bài test RIASEC nếu có
+  const riasecResult = results.find(r => r.quiz_id === 'riasec');
+  let topCareersFromRiasec: string[] = [];
+  let hollandCodeStr = '';
+
+  if (riasecResult) {
+    const match = calculateCareerMatch('riasec', riasecResult.answers);
+    topCareersFromRiasec = match.topCareers.map(c => c.name);
+    hollandCodeStr = match.personalityTraits[0] || '';
+  }
+
   if (completionRate === 0) {
     statusMessage = 'Bạn chưa bắt đầu Hành trình Core Engine';
     advice = 'Hãy làm bài test RIASEC đầu tiên để khám phá sở thích nghề nghiệp của bạn. Đây là viên gạch nền móng quan trọng nhất.';
   } else if (completionRate > 0 && completionRate < 4) {
     statusMessage = `Đang thu thập dữ liệu... (${completionRate}/4 bài test lõi)`;
     
-    // Đưa ra định hướng tạm thời dựa trên những gì đã có (Mock logic)
-    if (uniqueCompleted.includes('riasec') && !uniqueCompleted.includes('big-five')) {
-      advice = 'Hệ thống đã nhận diện được sở thích của bạn. Tuy nhiên, chúng tôi cần biết thêm về tính cách làm việc (Big Five) để xem bạn phù hợp với môi trường nào.';
-      recommendedCareers = ['Đang chờ thêm dữ liệu để phân tích chính xác...'];
+    if (riasecResult) {
+      advice = `Dữ liệu sơ bộ cho thấy ${hollandCodeStr}. Tuy nhiên, chúng tôi cần biết thêm về năng lực và tính cách để thu hẹp phạm vi nghề nghiệp. Hãy tiếp tục làm bài ${missingCore[0].toUpperCase()}.`;
+      recommendedCareers = topCareersFromRiasec;
     } else {
-      advice = `Bạn đang đi đúng hướng. Hãy hoàn thành bài test ${missingCore[0].toUpperCase()} để hệ thống có bức tranh toàn cảnh hơn về bạn.`;
-      recommendedCareers = ['Đang chờ thêm dữ liệu...'];
+      advice = `Bạn đang đi đúng hướng. Hãy hoàn thành bài test RIASEC - xương sống của hệ thống để chúng tôi đưa ra các gợi ý đầu tiên.`;
+      recommendedCareers = ['Đang chờ dữ liệu Sở thích...'];
     }
   } else {
     statusMessage = 'Phân tích toàn diện đã sẵn sàng (4/4)';
-    advice = 'Sự kết hợp giữa sở thích (RIASEC), năng lực, tính cách và giá trị của bạn chỉ ra rằng bạn sinh ra để làm những công việc đòi hỏi sự sáng tạo và linh hoạt cao.';
-    recommendedCareers = [
+    advice = `Tuyệt vời! Dựa trên hệ thống phân tích tích hợp (Sở thích, Năng lực, Tính cách, Giá trị), ${hollandCodeStr}. Dưới đây là các định hướng phù hợp nhất với bản chất cốt lõi của bạn.`;
+    recommendedCareers = topCareersFromRiasec.length > 0 ? topCareersFromRiasec : [
       'Giám đốc Sáng tạo (Creative Director)',
       'Chuyên gia UX/UI',
       'Kỹ sư Giải pháp (Solution Architect)'

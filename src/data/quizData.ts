@@ -26,6 +26,7 @@ export interface QuizConfig {
 }
 
 import { mbtiQuestions } from './mbtiQuestions';
+import { riasecQuestions } from './riasecQuestions';
 
 const mappedMbtiQuestions: QuizQuestion[] = mbtiQuestions.map((q) => ({
   id: q.id.toString(),
@@ -36,6 +37,18 @@ const mappedMbtiQuestions: QuizQuestion[] = mbtiQuestions.map((q) => ({
     { label: 'Bình thường', value: '3' },
     { label: 'Hơi không đồng ý', value: '2' },
     { label: 'Hoàn toàn không đồng ý', value: '1' }
+  ]
+}));
+
+const mappedRiasecQuestions: QuizQuestion[] = riasecQuestions.map((q) => ({
+  id: q.id,
+  text: `Mức độ hứng thú của bạn với công việc: "${q.text}"`,
+  options: [
+    { label: 'Rất không thích', value: '1' },
+    { label: 'Không thích', value: '2' },
+    { label: 'Bình thường', value: '3' },
+    { label: 'Thích', value: '4' },
+    { label: 'Rất thích', value: '5' }
   ]
 }));
 
@@ -53,31 +66,8 @@ export const QUIZ_DATA: Record<string, QuizConfig> = {
     title: 'Sở thích nghề nghiệp (RIASEC)',
     description: 'Đánh giá mức độ hứng thú của bạn với các loại công việc khác nhau.',
     type: 'riasec',
-    questions: [
-      {
-        id: 'r1',
-        text: 'Tôi thích sửa chữa các thiết bị điện tử, máy móc.',
-        options: [
-          { label: 'Rất không thích', value: '1' },
-          { label: 'Không thích', value: '2' },
-          { label: 'Bình thường', value: '3' },
-          { label: 'Thích', value: '4' },
-          { label: 'Rất thích', value: '5' }
-        ]
-      },
-      {
-        id: 'i1',
-        text: 'Tôi thích phân tích số liệu, giải bài toán khó.',
-        options: [
-          { label: 'Rất không thích', value: '1' },
-          { label: 'Không thích', value: '2' },
-          { label: 'Bình thường', value: '3' },
-          { label: 'Thích', value: '4' },
-          { label: 'Rất thích', value: '5' }
-        ]
-      },
-      // Thêm nhiều câu hỏi khác
-    ]
+    originalType: 'likert',
+    questions: mappedRiasecQuestions
   },
   ability: {
     id: 'ability',
