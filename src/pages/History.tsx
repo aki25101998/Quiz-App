@@ -6,13 +6,14 @@ import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
 import { QUIZ_DATA } from '../data/quizData';
 import { aggregateCareerResults } from '../utils/careerAggregator';
+import { RIASEC_LABELS } from '../types/constants';
 
 type QuizResult = {
   id: string;
   quiz_id: string;
   created_at: string;
   is_paid: boolean;
-  answers: Record<string, string | number>;
+  answers: Record<string, string>;
 };
 
 export default function History() {
@@ -100,13 +101,41 @@ export default function History() {
                     <p className="text-slate-300 leading-relaxed">{summary.advice}</p>
                   </div>
 
-                  {summary.completionRate > 1 && summary.recommendedCareers.length > 0 && (
+                  {/* RIASEC mini profile if available */}
+                  {summary.profile?.riasec && (
+                    <div className="bg-white/5 rounded-xl p-4 border border-white/10 mb-6">
+                      <h4 className="text-sm font-bold text-teal-400 uppercase tracking-wider mb-3">
+                        Mã Holland: {summary.profile.riasec.hollandCode}
+                      </h4>
+                      <div className="grid grid-cols-6 gap-2">
+                        {summary.profile.riasec.ranking.map((dim) => {
+                          const score = summary.profile!.riasec!.normalizedScores[dim];
+                          return (
+                            <div key={dim} className="text-center">
+                              <div className="text-xs font-bold text-white mb-1">{dim}</div>
+                              <div className="w-full bg-slate-700 rounded-full h-1.5 mb-1">
+                                <div 
+                                  className="bg-teal-400 h-1.5 rounded-full"
+                                  style={{ width: `${score}%` }}
+                                />
+                              </div>
+                              <div className="text-xs text-slate-400">{score}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {summary.recommendedCareers.length > 0 && (
                     <div>
-                      <h4 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Nghề nghiệp đề xuất (Dựa trên dữ liệu hiện có)</h4>
+                      <h4 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">
+                        Nghề nghiệp đề xuất ({summary.profile?.confidence || 0}% chính xác)
+                      </h4>
                       <div className="flex flex-wrap gap-3">
                         {summary.recommendedCareers.map((career, idx) => (
                           <span key={idx} className="px-4 py-2 rounded-full bg-orange-500/20 text-orange-300 border border-orange-500/30 text-sm font-medium">
-                            {career}
+                            {career.careerName} · {career.score}%
                           </span>
                         ))}
                       </div>

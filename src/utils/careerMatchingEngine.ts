@@ -1,134 +1,461 @@
+// ============================================================
+// CAREER MATCHING ENGINE
+// Computes career matches from a CareerProfile
+// ============================================================
+
+import type {
+  CareerProfile,
+  CareerMatch,
+  CareerMatchResult,
+  Career,
+  RiasecDimension,
+  BigFiveDimension,
+  AbilityDimension,
+  WorkValueDimension,
+} from '../types/types';
+import { CAREER_MATCH_WEIGHTS, RIASEC_LABELS } from '../types/constants';
+import { careerDatabase } from '../data/careerDatabase';
 import { mbtiResults } from '../data/mbtiResults';
 import { mbtiQuestions } from '../data/mbtiQuestions';
-import { riasecQuestions } from '../data/riasecQuestions';
+import { buildCareerProfile } from './profileAggregator';
 
-const riasecCareers: Record<string, { role: string, desc: string }[]> = {
-  R: [
-    { role: 'Kỹ sư Cơ điện / Chế tạo', desc: 'Làm việc trực tiếp với máy móc, công cụ và các quy trình kỹ thuật.' },
-    { role: 'Kiến trúc sư hệ thống mạng', desc: 'Thích hợp với người thích xây dựng và bảo trì hạ tầng thực tế.' }
-  ],
-  I: [
-    { role: 'Nhà phân tích Dữ liệu (Data Analyst)', desc: 'Nghiên cứu, tìm tòi và giải quyết các bài toán logic phức tạp.' },
-    { role: 'Bác sĩ / Nhà nghiên cứu Khoa học', desc: 'Đam mê khám phá nguyên nhân và quy luật của sự vật.' }
-  ],
-  A: [
-    { role: 'Giám đốc Sáng tạo (Creative Director)', desc: 'Tự do thể hiện ý tưởng độc đáo, thiết kế và nghệ thuật.' },
-    { role: 'Chuyên gia UX/UI', desc: 'Kết hợp giữa cái đẹp và trải nghiệm người dùng.' }
-  ],
-  S: [
-    { role: 'Chuyên gia Nhân sự (HR) / Đào tạo', desc: 'Gắn kết con người, lắng nghe và giúp đỡ người khác phát triển.' },
-    { role: 'Giáo viên / Giảng viên', desc: 'Truyền đạt kiến thức và hỗ trợ cộng đồng.' }
-  ],
-  E: [
-    { role: 'Giám đốc Điều hành (CEO) / Khởi nghiệp', desc: 'Khả năng lãnh đạo, thuyết phục và ra quyết định chiến lược.' },
-    { role: 'Giám đốc Marketing / Sales', desc: 'Môi trường cạnh tranh, đàm phán và tạo ra lợi nhuận.' }
-  ],
-  C: [
-    { role: 'Kế toán trưởng / Kiểm toán viên', desc: 'Làm việc với các con số, đòi hỏi tính chính xác và nguyên tắc cao.' },
-    { role: 'Chuyên viên Phân tích Rủi ro', desc: 'Tuân thủ quy trình, đảm bảo hệ thống vận hành trơn tru không sai sót.' }
-  ]
-};
+// ============================================================
+// MAIN MATCHING FUNCTION
+// ============================================================
 
-const riasecDescriptions: Record<string, string> = {
-  R: 'Thực tế (Realistic): Thích hành động, làm việc với công cụ, máy móc.',
-  I: 'Nghiên cứu (Investigative): Thích suy nghĩ, phân tích, tìm tòi logic.',
-  A: 'Nghệ thuật (Artistic): Thích sáng tạo, tự do, biểu đạt cá nhân.',
-  S: 'Xã hội (Social): Thích giúp đỡ, giao tiếp, truyền cảm hứng cho người khác.',
-  E: 'Quản lý (Enterprising): Thích lãnh đạo, thuyết phục, cạnh tranh kinh doanh.',
-  C: 'Nghiệp vụ (Conventional): Thích sự nguyên tắc, tổ chức, làm việc với dữ liệu chi tiết.'
-};
+/**
+ * Match careers against a CareerProfile.
+ * Returns sorted CareerMatch[] (highest score first).
+ */
+export function matchCareers(profile: CareerProfile): CareerMatch[] {
+  const matches: CareerMatch[] = [];
 
-export interface CareerMatchResult {
-  topCareers: {
-    name: string;
-    score: number;
-    description: string;
-  }[];
-  strengths: string[];
-  weaknesses: string[];
-  personalityTraits: string[];
+  for (const career of careerDatabase) {
+    const match = scoreCareer(profile, career);
+    if (match) {
+      matches.push(match);
+    }
+  }
+
+  // Sort by score descending
+  matches.sort((a, b) => b.score - a.score);
+  return matches;
 }
 
+// ============================================================
+// SCORING LOGIC
+// ============================================================
+
+function scoreCareer(profile: CareerProfile, career: Career): CareerMatch | null {
+  const dimensionScores: CareerMatch['dimensionScores'] = {};
+  let totalWeight = 0;
+  let weightedSum = 0;
+
+  // --- RIASEC similarity ---
+  if (profile.riasec && Object.keys(career.riasec).length > 0) {
+    const riasecSim = calculateRiasecSimilarity(
+      profile.riasec.normalizedScores,
+      career.riasec
+    );
+    dimensionScores.riasec = riasecSim;
+    weightedSum += riasecSim * CAREER_MATCH_WEIGHTS.riasec;
+    totalWeight += CAREER_MATCH_WEIGHTS.riasec;
+  }
+
+  // --- Ability similarity ---
+  if (profile.abilities && Object.keys(career.abilities).length > 0) {
+    const abilitySim = calculateAbilitySimilarity(
+      profile.abilities.normalizedScores,
+      career.abilities
+    );
+    dimensionScores.ability = abilitySim;
+    weightedSum += abilitySim * CAREER_MATCH_WEIGHTS.ability;
+    totalWeight += CAREER_MATCH_WEIGHTS.ability;
+  }
+
+  // --- Personality similarity ---
+  if (profile.bigFive && Object.keys(career.personality).length > 0) {
+    const personalitySim = calculatePersonalitySimilarity(
+      profile.bigFive.normalizedScores,
+      career.personality
+    );
+    dimensionScores.personality = personalitySim;
+    weightedSum += personalitySim * CAREER_MATCH_WEIGHTS.personality;
+    totalWeight += CAREER_MATCH_WEIGHTS.personality;
+  }
+
+  // --- Work Values similarity ---
+  if (profile.workValues && Object.keys(career.workValues).length > 0) {
+    const valueSim = calculateWorkValuesSimilarity(
+      profile.workValues.normalizedScores,
+      career.workValues
+    );
+    dimensionScores.workValues = valueSim;
+    weightedSum += valueSim * CAREER_MATCH_WEIGHTS.workValues;
+    totalWeight += CAREER_MATCH_WEIGHTS.workValues;
+  }
+
+  // Need at least one dimension to score
+  if (totalWeight === 0) return null;
+
+  // Normalize the weighted sum to account for missing dimensions
+  const score = Math.round(weightedSum / totalWeight);
+
+  // Generate explanations
+  const { reasons, strengths, concerns } = generateExplanation(
+    profile,
+    career,
+    dimensionScores
+  );
+
+  return {
+    careerId: career.id,
+    careerName: career.name,
+    field: career.field,
+    score,
+    confidence: profile.confidence,
+    reasons,
+    strengths,
+    concerns,
+    dimensionScores,
+  };
+}
+
+// ============================================================
+// SIMILARITY FUNCTIONS
+// ============================================================
+
+/**
+ * Calculate similarity between user RIASEC scores and career RIASEC profile.
+ * Uses cosine-like similarity normalized to 0-100.
+ */
+function calculateRiasecSimilarity(
+  userScores: Record<RiasecDimension, number>,
+  careerScores: Partial<Record<RiasecDimension, number>>
+): number {
+  const dims: RiasecDimension[] = ['R', 'I', 'A', 'S', 'E', 'C'];
+  let sumProduct = 0;
+  let sumUserSq = 0;
+  let sumCareerSq = 0;
+
+  for (const dim of dims) {
+    const u = userScores[dim] || 0;
+    const c = careerScores[dim] || 0;
+    sumProduct += u * c;
+    sumUserSq += u * u;
+    sumCareerSq += c * c;
+  }
+
+  const magnitude = Math.sqrt(sumUserSq) * Math.sqrt(sumCareerSq);
+  if (magnitude === 0) return 0;
+
+  // Cosine similarity → 0-100
+  return Math.round((sumProduct / magnitude) * 100);
+}
+
+/**
+ * Calculate similarity for ability scores.
+ * Only considers dimensions that the career requires.
+ */
+function calculateAbilitySimilarity(
+  userScores: Partial<Record<AbilityDimension, number>>,
+  careerRequirements: Partial<Record<AbilityDimension, number>>
+): number {
+  const dims = Object.keys(careerRequirements) as AbilityDimension[];
+  if (dims.length === 0) return 50; // neutral if no requirements
+
+  let totalSim = 0;
+  let count = 0;
+
+  for (const dim of dims) {
+    const userScore = userScores[dim];
+    const careerReq = careerRequirements[dim]!;
+
+    if (userScore === undefined) continue;
+
+    // How well does user meet the requirement?
+    // If user >= requirement: 100 (meets/exceeds)
+    // If user < requirement: proportional
+    const ratio = Math.min(userScore / Math.max(careerReq, 1), 1.5);
+    totalSim += Math.min(ratio * 100, 100);
+    count++;
+  }
+
+  if (count === 0) return 50;
+  return Math.round(totalSim / count);
+}
+
+/**
+ * Calculate personality similarity.
+ * Lower distance = higher similarity.
+ */
+function calculatePersonalitySimilarity(
+  userScores: Record<BigFiveDimension, number>,
+  careerProfile: Partial<Record<BigFiveDimension, number>>
+): number {
+  const dims = Object.keys(careerProfile) as BigFiveDimension[];
+  if (dims.length === 0) return 50;
+
+  let totalDistance = 0;
+  let count = 0;
+
+  for (const dim of dims) {
+    const u = userScores[dim] || 50;
+    const c = careerProfile[dim]!;
+    totalDistance += Math.abs(u - c);
+    count++;
+  }
+
+  if (count === 0) return 50;
+
+  // Max possible distance per dimension = 100
+  const avgDistance = totalDistance / count;
+  return Math.round(Math.max(0, 100 - avgDistance));
+}
+
+/**
+ * Calculate work values similarity.
+ * Focuses on alignment between what user values and what career offers.
+ */
+function calculateWorkValuesSimilarity(
+  userScores: Record<WorkValueDimension, number>,
+  careerValues: Partial<Record<WorkValueDimension, number>>
+): number {
+  const dims = Object.keys(careerValues) as WorkValueDimension[];
+  if (dims.length === 0) return 50;
+
+  let totalSim = 0;
+  let count = 0;
+
+  for (const dim of dims) {
+    const u = userScores[dim] || 50;
+    const c = careerValues[dim]!;
+    // Both high = great match; user high + career low = mismatch
+    const alignment = 100 - Math.abs(u - c);
+    totalSim += alignment;
+    count++;
+  }
+
+  if (count === 0) return 50;
+  return Math.round(totalSim / count);
+}
+
+// ============================================================
+// EXPLANATION GENERATOR
+// ============================================================
+
+function generateExplanation(
+  profile: CareerProfile,
+  career: Career,
+  dimScores: CareerMatch['dimensionScores']
+): { reasons: string[]; strengths: string[]; concerns: string[] } {
+  const reasons: string[] = [];
+  const strengths: string[] = [];
+  const concerns: string[] = [];
+
+  // RIASEC explanation
+  if (profile.riasec && dimScores.riasec !== undefined) {
+    const topDims = profile.riasec.ranking.slice(0, 2);
+    const topLabels = topDims.map(d => RIASEC_LABELS[d].name);
+
+    if (dimScores.riasec >= 70) {
+      reasons.push(`Sở thích nghề nghiệp của bạn (${topLabels.join(', ')}) phù hợp tốt với đặc thù công việc này.`);
+    } else if (dimScores.riasec >= 50) {
+      reasons.push(`Sở thích nghề nghiệp của bạn có mức tương thích trung bình với công việc này.`);
+    }
+
+    // Check top dimensions
+    for (const dim of topDims) {
+      const careerReq = career.riasec[dim] || 0;
+      if (careerReq >= 70) {
+        strengths.push(`${RIASEC_LABELS[dim].shortDesc} — đây cũng là yêu cầu quan trọng của nghề ${career.name}.`);
+      }
+    }
+
+    // Check weak dimensions that career requires
+    const bottomDims = profile.riasec.ranking.slice(-2);
+    for (const dim of bottomDims) {
+      const careerReq = career.riasec[dim] || 0;
+      if (careerReq >= 60) {
+        concerns.push(`Nghề này đòi hỏi xu hướng ${RIASEC_LABELS[dim].name} ở mức khá, trong khi đây không phải thế mạnh nổi trội của bạn.`);
+      }
+    }
+  }
+
+  // Ability explanation
+  if (profile.abilities && dimScores.ability !== undefined) {
+    if (dimScores.ability >= 75) {
+      strengths.push('Năng lực tư duy của bạn phù hợp tốt với yêu cầu kỹ năng của nghề này.');
+    } else if (dimScores.ability < 50) {
+      concerns.push('Một số kỹ năng tư duy mà nghề này yêu cầu có thể cần thời gian phát triển thêm.');
+    }
+  }
+
+  // Personality explanation
+  if (profile.bigFive && dimScores.personality !== undefined) {
+    if (dimScores.personality >= 70) {
+      reasons.push('Tính cách làm việc của bạn tương thích với môi trường nghề nghiệp này.');
+    } else if (dimScores.personality < 50) {
+      concerns.push('Môi trường làm việc của nghề này có thể đòi hỏi bạn thích nghi với phong cách khác so với tự nhiên.');
+    }
+  }
+
+  // Work Values explanation
+  if (profile.workValues && dimScores.workValues !== undefined) {
+    if (dimScores.workValues >= 70) {
+      reasons.push('Giá trị mà bạn coi trọng trong công việc phù hợp với những gì nghề này mang lại.');
+    } else if (dimScores.workValues < 50) {
+      concerns.push('Nghề này có thể không đáp ứng đầy đủ một số giá trị mà bạn coi trọng.');
+    }
+  }
+
+  // Ensure at least one reason
+  if (reasons.length === 0 && strengths.length > 0) {
+    reasons.push(`Nghề ${career.name} có mức độ tương thích dựa trên hồ sơ hiện tại của bạn.`);
+  }
+
+  return { reasons, strengths, concerns };
+}
+
+// ============================================================
+// BACKWARD COMPATIBILITY — calculateCareerMatch()
+// Used by Result.tsx, keeps existing interface working
+// ============================================================
+
 export function calculateCareerMatch(
-  quizId: string, 
+  quizId: string,
   answers: Record<string, string>
 ): CareerMatchResult {
-  // Logic tính toán dựa trên loại bài test. 
-  // Trong thực tế, hàm này sẽ phức tạp hơn và có thể xử lý tổng hợp nhiều bài test.
-  
-  if (quizId === 'riasec' && Object.keys(answers).length > 0) {
-    const scores: Record<string, number> = { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 };
-    
-    Object.entries(answers).forEach(([qId, valStr]) => {
-      const val = parseInt(valStr);
-      if (isNaN(val)) return;
-      const question = riasecQuestions.find(q => q.id === qId);
-      if (question) {
-        scores[question.dimension] += val;
-      }
-    });
-
-    // Sắp xếp điểm số từ cao xuống thấp
-    const sortedDimensions = Object.entries(scores).sort((a, b) => b[1] - a[1]);
-    const top1 = sortedDimensions[0][0];
-    const top2 = sortedDimensions[1][0];
-    const top3 = sortedDimensions[2][0];
-    
-    const hollandCode = `${top1}${top2}${top3}`;
-
-    const topCareers = [
-      { name: riasecCareers[top1][0].role, score: 95, description: `Phù hợp với nhóm ${top1} (Điểm cao nhất của bạn).\n${riasecCareers[top1][0].desc}` },
-      { name: riasecCareers[top2][0].role, score: 88, description: `Phù hợp với nhóm ${top2}.\n${riasecCareers[top2][0].desc}` },
-      { name: riasecCareers[top3][1].role, score: 82, description: `Phù hợp với nhóm ${top3}.\n${riasecCareers[top3][1].desc}` }
-    ];
-
-    return {
-      topCareers,
-      strengths: [riasecDescriptions[top1], riasecDescriptions[top2]],
-      weaknesses: [],
-      personalityTraits: [`Mã Holland của bạn là: ${hollandCode}`]
-    };
-  }
-
+  // MBTI — keep existing logic (fun quiz, separate system)
   if (quizId === 'mbti') {
-    let axes: Record<string, number> = { EI: 0, SN: 0, TF: 0, JP: 0 };
-    Object.entries(answers).forEach(([qId, valStr]) => {
-      const val = parseInt(valStr);
-      if (isNaN(val)) return;
-      const question = mbtiQuestions.find(q => q.id.toString() === qId);
-      if (question) {
-        // 5: +2, 4: +1, 3: 0, 2: -1, 1: -2
-        const score = (val - 3) * question.direction;
-        axes[question.dimension] += score;
-      }
-    });
-
-    let finalMBTI = '';
-    finalMBTI += (axes.EI >= 0) ? 'E' : 'I';
-    finalMBTI += (axes.SN >= 0) ? 'S' : 'N';
-    finalMBTI += (axes.TF >= 0) ? 'T' : 'F';
-    finalMBTI += (axes.JP >= 0) ? 'J' : 'P';
-
-    const mbtiData = mbtiResults[finalMBTI] || mbtiResults['INTJ'];
-    
-    return {
-      topCareers: [
-        { name: `${finalMBTI} - ${mbtiData.name}`, score: 100, description: mbtiData.description }
-      ],
-      strengths: mbtiData.strengths,
-      weaknesses: mbtiData.weaknesses,
-      personalityTraits: []
-    };
+    return calculateMbtiResult(answers);
   }
 
-  // Default mock result
+  // For core quizzes: build single-quiz profile and match
+  const profile = buildCareerProfile([{ quiz_id: quizId, answers }]);
+
+  // Run matching engine
+  const careerMatches = matchCareers(profile);
+  const topMatches = careerMatches.slice(0, 10);
+
+  // Generate RIASEC-specific info for display
+  const personalityTraits: string[] = [];
+  if (profile.riasec) {
+    personalityTraits.push(`Mã Holland của bạn là: ${profile.riasec.hollandCode}`);
+  }
+
+  // Build strengths/weaknesses from profile
+  const resultStrengths: string[] = [];
+  const resultWeaknesses: string[] = [];
+
+  if (profile.riasec) {
+    const top2 = profile.riasec.ranking.slice(0, 2);
+    for (const dim of top2) {
+      resultStrengths.push(`${RIASEC_LABELS[dim].name}: ${RIASEC_LABELS[dim].shortDesc}`);
+    }
+    const bottom2 = profile.riasec.ranking.slice(-2);
+    for (const dim of bottom2) {
+      if (profile.riasec.normalizedScores[dim] < 40) {
+        resultWeaknesses.push(`${RIASEC_LABELS[dim].name}: xu hướng thấp hơn — không phải điểm yếu, chỉ là không phải ưu tiên tự nhiên của bạn.`);
+      }
+    }
+  }
+
+  if (profile.abilities) {
+    const dims = Object.entries(profile.abilities.normalizedScores)
+      .sort(([, a], [, b]) => (b ?? 0) - (a ?? 0));
+    if (dims.length > 0 && dims[0][1] !== undefined && dims[0][1] >= 65) {
+      resultStrengths.push(`Năng lực nổi bật: ${dims[0][0]}`);
+    }
+  }
+
+  if (profile.bigFive) {
+    const { normalizedScores } = profile.bigFive;
+    if (normalizedScores.conscientiousness >= 70) {
+      resultStrengths.push('Tính kỷ luật và trách nhiệm cao');
+    }
+    if (normalizedScores.openness >= 70) {
+      resultStrengths.push('Khả năng khám phá và sáng tạo tốt');
+    }
+  }
+
+  if (profile.workValues) {
+    const topValues = profile.workValues.ranking.slice(0, 2);
+    if (topValues.length > 0) {
+      resultStrengths.push(`Giá trị cốt lõi: ${topValues.map(v => v.dimension).join(', ')}`);
+    }
+  }
+
+  // Convert to backward-compatible format
+  const topCareers = topMatches.map(m => ({
+    name: m.careerName,
+    score: m.score,
+    description: buildCareerDescription(m),
+  }));
+
+  return {
+    topCareers,
+    strengths: resultStrengths.length > 0 ? resultStrengths : ['Đang phân tích...'],
+    weaknesses: resultWeaknesses,
+    personalityTraits,
+    careerMatches: topMatches,
+    profile,
+  };
+}
+
+function buildCareerDescription(match: CareerMatch): string {
+  const parts: string[] = [];
+
+  if (match.reasons.length > 0) {
+    parts.push(match.reasons[0]);
+  }
+
+  if (match.strengths.length > 0) {
+    parts.push(match.strengths[0]);
+  }
+
+  if (match.concerns.length > 0) {
+    parts.push(`Lưu ý: ${match.concerns[0]}`);
+  }
+
+  if (parts.length === 0) {
+    parts.push(`Mức độ tương thích dựa trên hồ sơ hiện tại: ${match.score}%`);
+  }
+
+  return parts.join('\n');
+}
+
+// ============================================================
+// MBTI RESULT (kept separately — fun quiz)
+// ============================================================
+
+function calculateMbtiResult(answers: Record<string, string>): CareerMatchResult {
+  const axes: Record<string, number> = { EI: 0, SN: 0, TF: 0, JP: 0 };
+
+  Object.entries(answers).forEach(([qId, valStr]) => {
+    const val = parseInt(valStr, 10);
+    if (isNaN(val)) return;
+    const question = mbtiQuestions.find(q => q.id.toString() === qId);
+    if (question) {
+      const score = (val - 3) * question.direction;
+      axes[question.dimension] += score;
+    }
+  });
+
+  let finalMBTI = '';
+  finalMBTI += (axes.EI >= 0) ? 'E' : 'I';
+  finalMBTI += (axes.SN >= 0) ? 'S' : 'N';
+  finalMBTI += (axes.TF >= 0) ? 'T' : 'F';
+  finalMBTI += (axes.JP >= 0) ? 'J' : 'P';
+
+  const mbtiData = mbtiResults[finalMBTI] || mbtiResults['INTJ'];
+
   return {
     topCareers: [
-      { name: 'Nghề nghiệp A', score: 85, description: 'Mô tả phù hợp...' },
-      { name: 'Nghề nghiệp B', score: 75, description: 'Mô tả phù hợp...' }
+      { name: `${finalMBTI} - ${mbtiData.name}`, score: 100, description: mbtiData.description }
     ],
-    strengths: ['Điểm mạnh 1', 'Điểm mạnh 2'],
-    weaknesses: ['Điểm yếu 1'],
-    personalityTraits: ['Đặc điểm 1']
+    strengths: mbtiData.strengths,
+    weaknesses: mbtiData.weaknesses,
+    personalityTraits: [],
   };
 }
