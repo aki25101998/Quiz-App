@@ -63,9 +63,9 @@ export default function Home() {
         {/* CORE ENGINE SECTION */}
         <div className="mb-16">
           <h2 className="text-2xl font-bold text-slate-800 mb-2 flex items-center">
-            <span className="text-teal-500 mr-2">●</span> Core Engine: Hành trình Khám phá Nghề nghiệp
+            <span className="text-teal-500 mr-2">✦</span> Hành Trình Giải Mã Bản Thân (Core Engine)
           </h2>
-          <p className="text-slate-500 mb-6">4 bài đánh giá thiết yếu giúp tìm ra công việc phù hợp với bản chất thật của bạn.</p>
+          <p className="text-slate-500 mb-6 text-lg">4 bước giải phẫu chuyên sâu để tìm ra sự nghiệp sinh ra dành cho bạn. <br className="hidden md:block" /> Đừng đoán mò nữa, hãy để dữ liệu lên tiếng.</p>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
             {coreQuizzes.map((quiz, index) => {
@@ -132,9 +132,9 @@ export default function Home() {
         {/* FUN TESTS SECTION */}
         <div className="mb-16">
           <h2 className="text-2xl font-bold text-slate-800 mb-2 flex items-center">
-            <span className="text-orange-500 mr-2">🎭</span> Khám phá tính cách (Giải trí)
+            <span className="text-orange-500 mr-2">🎭</span> Trạm Dừng Vui Nhộn (Góc Giải Trí)
           </h2>
-          <p className="text-slate-500 mb-6">Những bài test vui nhộn để hiểu thêm về bản thân và chia sẻ cùng bạn bè.</p>
+          <p className="text-slate-500 mb-6 text-lg">Xả hơi với những bài test trending để bóc trần những góc khuất tính cách thú vị nhất của bạn.</p>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
             {funQuizzes.map((quiz, index) => {
