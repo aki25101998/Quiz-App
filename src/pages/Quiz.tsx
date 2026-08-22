@@ -23,6 +23,7 @@ export default function Quiz() {
     isLastQuestion 
   } = useQuiz(quiz.questions.length);
 
+  const [hasStarted, setHasStarted] = useState(!quiz.introContent);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const currentQuestion = quiz.questions[currentIndex];
 
@@ -50,6 +51,53 @@ export default function Quiz() {
     });
     navigate(`/checkout/${id}`, { state: { answers: mockAnswers, quiz_id: id } });
   };
+
+  if (!hasStarted && quiz.introContent) {
+    return (
+      <div className="w-full max-w-3xl mx-auto py-12 px-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white/90 backdrop-blur-xl p-8 md:p-12 rounded-3xl border border-white/50 shadow-[0_8px_30px_rgb(0,0,0,0.06)] relative overflow-hidden"
+        >
+          <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/10 blur-[80px] rounded-full pointer-events-none"></div>
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-orange-500/10 blur-[80px] rounded-full pointer-events-none"></div>
+          
+          <div className="relative z-10">
+            <h1 className="text-3xl md:text-4xl font-extrabold text-slate-800 mb-8 tracking-tight">
+              {quiz.introContent.title}
+            </h1>
+            
+            <div className="space-y-4 mb-8">
+              {quiz.introContent.body.map((paragraph, idx) => (
+                <p key={idx} className="text-slate-600 text-lg leading-relaxed flex items-start gap-3">
+                  <span className="text-teal-500 mt-1">✦</span>
+                  <span>{paragraph}</span>
+                </p>
+              ))}
+            </div>
+
+            <div className="bg-orange-50/80 border border-orange-200/60 p-6 rounded-2xl mb-10 shadow-sm">
+              <p className="text-orange-800 font-medium leading-relaxed">
+                {quiz.introContent.upsellText}
+              </p>
+            </div>
+
+            <div className="flex justify-center">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setHasStarted(true)}
+                className="inline-flex items-center justify-center px-10 py-4 text-lg font-bold text-white bg-slate-800 hover:bg-slate-900 rounded-full transition-colors shadow-lg shadow-slate-900/20"
+              >
+                Bắt đầu làm bài <span className="ml-2">→</span>
+              </motion.button>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full">
