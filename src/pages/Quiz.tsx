@@ -101,7 +101,7 @@ export default function Quiz() {
                   <div className="absolute top-1/2 left-[10%] right-[10%] h-1 bg-slate-100 -z-10 transform -translate-y-1/2 rounded-full hidden sm:block"></div>
                   {currentQuestion.options?.map((option: any, idx: number) => {
                     const likertEmojis = ['😖', '☹️', '😐', '🙂', '😍'];
-                    const sizes = ['w-14 h-14 md:w-20 md:h-20 text-2xl md:text-4xl', 'w-12 h-12 md:w-16 md:h-16 text-xl md:text-3xl', 'w-10 h-10 md:w-12 md:h-12 text-lg md:text-xl', 'w-12 h-12 md:w-16 md:h-16 text-xl md:text-3xl', 'w-14 h-14 md:w-20 md:h-20 text-2xl md:text-4xl'];
+                    const sizeClass = 'w-14 h-14 md:w-20 md:h-20 text-2xl md:text-4xl';
                     const colors = [
                       'border-rose-400 hover:bg-rose-50 text-rose-500',
                       'border-orange-400 hover:bg-orange-50 text-orange-500',
@@ -117,7 +117,7 @@ export default function Quiz() {
                           whileTap={{ scale: 0.9 }}
                           transition={{ type: "spring", stiffness: 1000, damping: 15 }}
                           onClick={() => onSelectOption(option.value)}
-                          className={`rounded-full border-[3px] bg-white transition-colors shadow-sm flex items-center justify-center ${sizes[idx]} ${colors[idx]}`}
+                          className={`rounded-full border-[3px] bg-white transition-colors shadow-sm flex items-center justify-center ${sizeClass} ${colors[idx]}`}
                           title={option.label}
                         >
                           <span className="group-hover:scale-125 transition-transform duration-75">
