@@ -119,7 +119,7 @@ export default function Quiz() {
                           className={`rounded-full border-[3px] bg-white transition-all shadow-sm flex items-center justify-center ${sizes[idx]} ${colors[idx]}`}
                           title={option.label}
                         >
-                          <span className="group-hover:scale-110 transition-transform duration-300 grayscale group-hover:grayscale-0 opacity-80 group-hover:opacity-100">
+                          <span className="group-hover:scale-110 transition-transform duration-300">
                             {likertEmojis[idx]}
                           </span>
                         </motion.button>
