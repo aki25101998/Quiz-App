@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ChevronRight, Clock, FileText, CheckCircle, AlertCircle } from 'lucide-react';
+import { ChevronRight, Clock, FileText, CheckCircle, AlertCircle, Trash2 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
 import { QUIZ_DATA } from '../data/quizData';
@@ -20,6 +20,44 @@ export default function History() {
   const navigate = useNavigate();
   const [results, setResults] = useState<QuizResult[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
+
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (!confirm('Bạn có chắc chắn muốn xóa kết quả này?')) return;
+    
+    setDeletingId(id);
+    const { error } = await supabase
+      .from('quiz_results')
+      .delete()
+      .eq('id', id);
+
+    if (!error) {
+      setResults(prev => prev.filter(r => r.id !== id));
+    } else {
+      alert('Có lỗi xảy ra khi xóa');
+    }
+    setDeletingId(null);
+  };
+
+  const handleClearAll = async () => {
+    if (!user) return;
+    if (!confirm('Bạn có chắc chắn muốn xóa TOÀN BỘ lịch sử làm bài?')) return;
+    
+    setIsDeletingAll(true);
+    const { error } = await supabase
+      .from('quiz_results')
+      .delete()
+      .eq('user_id', user.id);
+
+    if (!error) {
+      setResults([]);
+    } else {
+      alert('Có lỗi xảy ra khi xóa');
+    }
+    setIsDeletingAll(false);
+  };
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -61,10 +99,26 @@ export default function History() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-8"
+        className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4"
       >
-        <h1 className="text-3xl font-bold text-slate-800 mb-2">Lịch sử làm bài & Phân tích</h1>
-        <p className="text-slate-600">Theo dõi hành trình và xem định hướng tổng hợp của bạn</p>
+        <div>
+          <h1 className="text-3xl font-bold text-slate-800 mb-2">Lịch sử làm bài & Phân tích</h1>
+          <p className="text-slate-600">Theo dõi hành trình và xem định hướng tổng hợp của bạn</p>
+        </div>
+        {results.length > 0 && (
+          <button
+            onClick={handleClearAll}
+            disabled={isDeletingAll}
+            className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl transition-colors text-sm font-medium disabled:opacity-50 border border-red-100"
+          >
+            {isDeletingAll ? (
+              <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              <Trash2 size={16} />
+            )}
+            {isDeletingAll ? 'Đang xóa...' : 'Xóa tất cả'}
+          </button>
+        )}
       </motion.div>
 
       {results.length > 0 && (
@@ -222,8 +276,22 @@ export default function History() {
                       Chưa thanh toán
                     </div>
                   )}
-                  <div className="w-8 h-8 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-orange-50 group-hover:text-orange-500 group-hover:border-orange-100 transition-all">
-                    <ChevronRight size={20} />
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={(e) => handleDelete(e, result.id)}
+                      disabled={deletingId === result.id}
+                      className="w-8 h-8 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-500 hover:border-red-100 transition-all z-10"
+                      title="Xóa bài làm này"
+                    >
+                      {deletingId === result.id ? (
+                        <div className="w-3 h-3 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        <Trash2 size={14} />
+                      )}
+                    </button>
+                    <div className="w-8 h-8 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-orange-50 group-hover:text-orange-500 group-hover:border-orange-100 transition-all">
+                      <ChevronRight size={20} />
+                    </div>
                   </div>
                 </div>
               </motion.div>
