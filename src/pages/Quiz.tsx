@@ -115,11 +115,12 @@ export default function Quiz() {
                         <motion.button
                           whileHover={{ scale: 1.15 }}
                           whileTap={{ scale: 0.9 }}
+                          transition={{ type: "spring", stiffness: 500, damping: 20 }}
                           onClick={() => onSelectOption(option.value)}
                           className={`rounded-full border-[3px] bg-white transition-all shadow-sm flex items-center justify-center ${sizes[idx]} ${colors[idx]}`}
                           title={option.label}
                         >
-                          <span className="group-hover:scale-110 transition-transform duration-300">
+                          <span className="group-hover:scale-110 transition-transform duration-150">
                             {likertEmojis[idx]}
                           </span>
                         </motion.button>
