@@ -75,9 +75,9 @@ export const QUIZ_DATA: Record<string, QuizConfig> = {
     introContent: {
       title: '🔍 Giải mã ADN Nghề Nghiệp (Holland Code)',
       body: [
-        'Bài test này không có đáp án Đúng hay Sai. Nó sử dụng thang đo 5 mức độ để quét toàn diện Cường độ Hứng thú của bạn qua 60 hoạt động thực tế.',
-        'Hệ thống sẽ dùng thuật toán chuẩn O*NET của Mỹ để chấm điểm và trích xuất ra "Mã Holland" (Gồm 3 chữ cái mạnh nhất trong 6 nhóm R-I-A-S-E-C).',
-        'Mã 3 chữ cái này vô cùng quan trọng, nó tạo ra 120 tổ hợp tính cách khác nhau, giúp AI chỉ điểm chính xác công việc nào sinh ra là để dành cho bạn.'
+        'Theo Lý thuyết John Holland, con người và môi trường làm việc được chia thành 6 nhóm: R (Thực tế), I (Nghiên cứu), A (Nghệ thuật), S (Xã hội), E (Quản lý) và C (Nghiệp vụ). Trải nghiệm cho thấy bạn sẽ phát triển rực rỡ nhất khi được đặt vào đúng môi trường thuộc về mình.',
+        'Bài test này áp dụng tiêu chuẩn O*NET của Bộ Lao động Mỹ. Hệ thống sẽ không bắt bạn chọn Đúng/Sai, mà sử dụng thang đo 5 mức độ để đo lường chính xác cường độ đam mê của bạn qua 60 hoạt động thực tế.',
+        'Thuật toán sẽ tính điểm và trích xuất ra "Mã Holland" của bạn (gồm 3 chữ cái có điểm cao nhất). Tại sao phải là 3 chữ cái? Vì tâm lý con người rất phức tạp. Tổ hợp 3 đặc điểm mạnh nhất sẽ phác họa nên DNA nghề nghiệp độc bản của bạn, giúp AI định vị chính xác công việc nào sinh ra là để dành cho bạn!'
       ],
       upsellText: '🔥 BẬT MÍ: Tìm ra sở thích chỉ là bước khởi động! Để biết bạn có thực sự trụ lại được với nghề đó hay không, hệ thống sẽ mở khóa bài test NĂNG LỰC (Ability) ngay sau khi bạn hoàn thành bài này. Hoàn thành ngay để thu thập đủ 4 mảnh ghép Core Engine nhé!'
     },
