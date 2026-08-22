@@ -44,11 +44,11 @@ const mappedRiasecQuestions: QuizQuestion[] = riasecQuestions.map((q) => ({
   id: q.id,
   text: `Mức độ hứng thú của bạn với công việc: "${q.text}"`,
   options: [
-    { label: 'Rất không thích', value: '1' },
-    { label: 'Không thích', value: '2' },
-    { label: 'Bình thường', value: '3' },
-    { label: 'Thích', value: '4' },
-    { label: 'Rất thích', value: '5' }
+    { label: '😖 Rất không thích', value: '1' },
+    { label: '☹️ Không thích', value: '2' },
+    { label: '😐 Bình thường', value: '3' },
+    { label: '🙂 Thích', value: '4' },
+    { label: '😍 Rất thích', value: '5' }
   ]
 }));
 
