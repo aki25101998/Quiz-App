@@ -61,11 +61,19 @@ export default function Home() {
         </div>
 
         {/* CORE ENGINE SECTION */}
-        <div className="mb-16">
-          <h2 className="text-2xl font-bold text-slate-800 mb-2 flex items-center">
-            <span className="text-teal-500 mr-2">✦</span> Hành Trình Giải Mã Bản Thân (Core Engine)
-          </h2>
-          <p className="text-slate-500 mb-6 text-lg">4 bước giải phẫu chuyên sâu để tìm ra sự nghiệp sinh ra dành cho bạn. <br className="hidden md:block" /> Đừng đoán mò nữa, hãy để dữ liệu lên tiếng.</p>
+        <div className="mb-20">
+          <div className="flex flex-col items-center md:items-start text-center md:text-left mb-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-teal-50 border border-teal-100 mb-4">
+              <Sparkles className="w-4 h-4 text-teal-600" />
+              <span className="text-xs font-bold text-teal-700 tracking-widest uppercase">Core Engine</span>
+            </div>
+            <h2 className="text-3xl md:text-4xl font-extrabold text-slate-800 mb-4 tracking-tight">
+              Hành Trình <span className="bg-gradient-to-r from-teal-600 to-indigo-600 bg-clip-text text-transparent">Giải Mã Bản Thân</span>
+            </h2>
+            <p className="text-slate-500 text-lg max-w-2xl leading-relaxed">
+              4 bước giải phẫu chuyên sâu để tìm ra sự nghiệp sinh ra dành cho bạn. <br className="hidden md:block" /> Đừng đoán mò nữa, hãy để dữ liệu lên tiếng.
+            </p>
+          </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
             {coreQuizzes.map((quiz, index) => {
@@ -130,11 +138,19 @@ export default function Home() {
         </div>
 
         {/* FUN TESTS SECTION */}
-        <div className="mb-16">
-          <h2 className="text-2xl font-bold text-slate-800 mb-2 flex items-center">
-            <span className="text-orange-500 mr-2">🎭</span> Trạm Dừng Vui Nhộn (Góc Giải Trí)
-          </h2>
-          <p className="text-slate-500 mb-6 text-lg">Xả hơi với những bài test trending để bóc trần những góc khuất tính cách thú vị nhất của bạn.</p>
+        <div className="mb-20">
+          <div className="flex flex-col items-center md:items-start text-center md:text-left mb-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-50 border border-orange-100 mb-4">
+              <span className="text-base leading-none">🎭</span>
+              <span className="text-xs font-bold text-orange-700 tracking-widest uppercase">Góc Giải Trí</span>
+            </div>
+            <h2 className="text-3xl md:text-4xl font-extrabold text-slate-800 mb-4 tracking-tight">
+              Trạm Dừng <span className="bg-gradient-to-r from-orange-500 to-rose-500 bg-clip-text text-transparent">Vui Nhộn</span>
+            </h2>
+            <p className="text-slate-500 text-lg max-w-2xl leading-relaxed">
+              Xả hơi với những bài test trending để bóc trần những góc khuất tính cách thú vị nhất của bạn.
+            </p>
+          </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
             {funQuizzes.map((quiz, index) => {
