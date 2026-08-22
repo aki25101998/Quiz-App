@@ -6,7 +6,6 @@ import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
 import { QUIZ_DATA } from '../data/quizData';
 import { aggregateCareerResults } from '../utils/careerAggregator';
-import { RIASEC_LABELS } from '../types/constants';
 
 type QuizResult = {
   id: string;
