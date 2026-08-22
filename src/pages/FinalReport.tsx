@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ChevronRight, Target, Brain, Heart, Star, Sparkles, BookOpen, Briefcase } from 'lucide-react';
+import { Target, Brain, Heart, Star, Sparkles, Briefcase } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
 import { aggregateCareerResults } from '../utils/careerAggregator';
 import type { QuizResultData } from '../utils/careerAggregator';
 import type { DashboardSummary } from '../types/types';
 import { careerDatabase } from '../data/careerDatabase';
-import { RIASEC_LABELS, BIG_FIVE_LABELS, ABILITY_LABELS, WORK_VALUE_LABELS, getScoreLabel } from '../types/constants';
+import { BIG_FIVE_LABELS, ABILITY_LABELS, WORK_VALUE_LABELS } from '../types/constants';
 
 export default function FinalReport() {
   const { user, loading: authLoading } = useAuth();

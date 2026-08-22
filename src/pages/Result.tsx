@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useLocation, Navigate, useParams, Link, useNavigate } from 'react-router-dom';
+import { useLocation, useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { calculateMbtiResult } from '../utils/careerMatchingEngine';
 import { aggregateCareerResults } from '../utils/careerAggregator';

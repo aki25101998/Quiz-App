@@ -17,7 +17,7 @@ import { CAREER_MATCH_WEIGHTS, RIASEC_LABELS } from '../types/constants';
 import { careerDatabase } from '../data/careerDatabase';
 import { mbtiResults } from '../data/mbtiResults';
 import { mbtiQuestions } from '../data/mbtiQuestions';
-import { buildCareerProfile } from './profileAggregator';
+
 
 // ============================================================
 // MAIN MATCHING FUNCTION
