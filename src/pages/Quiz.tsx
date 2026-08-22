@@ -86,19 +86,63 @@ export default function Quiz() {
               {currentQuestion.text}
             </h2>
 
-            <div className="space-y-4">
-              {currentQuestion.options?.map((option: any, idx: number) => (
-                <motion.button
-                  key={idx}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => onSelectOption(option.value)}
-                  className="w-full text-left px-6 py-4 rounded-xl border-2 border-slate-200 bg-white hover:bg-teal-50 hover:border-teal-400 hover:text-teal-900 transition-all font-medium text-slate-700 text-base md:text-lg shadow-sm"
-                >
-                  {option.label}
-                </motion.button>
-              ))}
-            </div>
+            {quiz.originalType === 'likert' ? (
+              <div className="w-full max-w-2xl mx-auto mt-12">
+                <div className="flex justify-between items-center px-1 mb-8">
+                  <span className="text-sm md:text-base font-extrabold text-rose-500 uppercase tracking-widest text-left w-1/3">
+                    {currentQuestion.options[0].label.replace(/^[^\wÀ-ỹ]+/, '').trim()}
+                  </span>
+                  <span className="text-sm md:text-base font-extrabold text-teal-500 uppercase tracking-widest text-right w-1/3">
+                    {currentQuestion.options[currentQuestion.options.length - 1].label.replace(/^[^\wÀ-ỹ]+/, '').trim()}
+                  </span>
+                </div>
+                
+                <div className="flex justify-between items-center relative">
+                  <div className="absolute top-1/2 left-[10%] right-[10%] h-1 bg-slate-100 -z-10 transform -translate-y-1/2 rounded-full hidden sm:block"></div>
+                  {currentQuestion.options?.map((option: any, idx: number) => {
+                    const likertEmojis = ['😖', '☹️', '😐', '🙂', '😍'];
+                    const sizes = ['w-14 h-14 md:w-20 md:h-20 text-2xl md:text-4xl', 'w-12 h-12 md:w-16 md:h-16 text-xl md:text-3xl', 'w-10 h-10 md:w-12 md:h-12 text-lg md:text-xl', 'w-12 h-12 md:w-16 md:h-16 text-xl md:text-3xl', 'w-14 h-14 md:w-20 md:h-20 text-2xl md:text-4xl'];
+                    const colors = [
+                      'border-rose-400 hover:bg-rose-50 text-rose-500',
+                      'border-orange-400 hover:bg-orange-50 text-orange-500',
+                      'border-slate-300 hover:bg-slate-50 text-slate-500',
+                      'border-lime-400 hover:bg-lime-50 text-lime-500',
+                      'border-teal-400 hover:bg-teal-50 text-teal-500'
+                    ];
+
+                    return (
+                      <div key={idx} className="flex flex-col items-center gap-2 group">
+                        <motion.button
+                          whileHover={{ scale: 1.15 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => onSelectOption(option.value)}
+                          className={`rounded-full border-[3px] bg-white transition-all shadow-sm flex items-center justify-center ${sizes[idx]} ${colors[idx]}`}
+                          title={option.label}
+                        >
+                          <span className="group-hover:scale-110 transition-transform duration-300 grayscale group-hover:grayscale-0 opacity-80 group-hover:opacity-100">
+                            {likertEmojis[idx]}
+                          </span>
+                        </motion.button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {currentQuestion.options?.map((option: any, idx: number) => (
+                  <motion.button
+                    key={idx}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => onSelectOption(option.value)}
+                    className="w-full text-left px-6 py-4 rounded-xl border-2 border-slate-200 bg-white hover:bg-teal-50 hover:border-teal-400 hover:text-teal-900 transition-all font-medium text-slate-700 text-base md:text-lg shadow-sm"
+                  >
+                    {option.label}
+                  </motion.button>
+                ))}
+              </div>
+            )}
           </motion.div>
         </AnimatePresence>
       </div>
