@@ -91,16 +91,10 @@ export async function updateProfileStatus(
   profileId: string,
   status: Profile['status']
 ): Promise<void> {
-  const updates: Partial<Profile> = { status };
-  if (status === 'PAID') {
-    updates.is_paid = true;
-    updates.paid_at = new Date().toISOString();
-  }
-
-  const { error } = await supabase
-    .from('profiles')
-    .update(updates)
-    .eq('id', profileId);
+  const { error } = await supabase.rpc('update_profile_status', {
+    p_profile_id: profileId,
+    p_status: status,
+  });
 
   if (error) throw new Error(`Failed to update profile status: ${error.message}`);
 }
@@ -109,25 +103,23 @@ export async function setActiveVersion(
   profileId: string,
   versionId: string
 ): Promise<void> {
-  const { error } = await supabase
-    .from('profiles')
-    .update({ active_version_id: versionId })
-    .eq('id', profileId);
+  const { error } = await supabase.rpc('set_active_version', {
+    p_profile_id: profileId,
+    p_version_id: versionId,
+  });
 
   if (error) throw new Error(`Failed to set active version: ${error.message}`);
 }
 
 export async function incrementRevisionUsed(profileId: string): Promise<void> {
-  // Use RPC or manual increment
-  const profile = await getProfile(profileId);
-  if (!profile) throw new Error('Profile not found');
-
-  const { error } = await supabase
-    .from('profiles')
-    .update({ revision_used: profile.revision_used + 1 })
-    .eq('id', profileId);
+  const { data: success, error } = await supabase.rpc('increment_revision_used', {
+    p_profile_id: profileId,
+  });
 
   if (error) throw new Error(`Failed to increment revision: ${error.message}`);
+  if (!success) {
+    throw new Error('Profile revision limit reached');
+  }
 }
 
 // ---------- DELETE ----------
@@ -215,6 +207,8 @@ export async function checkAndUpdateReadyStatus(profileId: string): Promise<void
 
       if (isComplete && profile.status !== 'READY') {
         await updateProfileStatus(profileId, 'READY');
+      } else if (!isComplete && profile.status === 'READY') {
+        await updateProfileStatus(profileId, 'DRAFT');
       }
     }
   }

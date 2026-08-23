@@ -66,36 +66,53 @@ export async function attachAssessment(
   const column = ASSESSMENT_TO_VERSION_COLUMN[quizId];
   if (!column) throw new Error(`Unknown quiz type: ${quizId}`);
 
-  const currentVersion = profile.active_version_id
-    ? await getProfileVersion(profile.active_version_id)
-    : null;
+  let retries = 3;
+  while (retries > 0) {
+    const currentVersion = profile.active_version_id
+      ? await getProfileVersion(profile.active_version_id)
+      : null;
 
-  let newVersion: ProfileVersion;
+    let newVersion: ProfileVersion;
 
-  if (!currentVersion) {
-    // Create first version
-    newVersion = await createVersion(profileId, 1, {
-      [column]: attemptId,
-    }, 'Initial assessment');
-  } else {
-    // Update existing draft version by creating a new one with merged data
-    const nextNumber = currentVersion.version_number + 1;
-    newVersion = await createVersion(profileId, nextNumber, {
-      riasec_attempt_id: currentVersion.riasec_attempt_id,
-      ability_attempt_id: currentVersion.ability_attempt_id,
-      big_five_attempt_id: currentVersion.big_five_attempt_id,
-      work_values_attempt_id: currentVersion.work_values_attempt_id,
-      [column]: attemptId, // Override with new attempt
-    }, `Added ${quizId} assessment`);
+    try {
+      if (!currentVersion) {
+        // Create first version
+        newVersion = await createVersion(profileId, 1, {
+          [column]: attemptId,
+        }, 'Initial assessment');
+      } else {
+        // Update existing draft version by creating a new one with merged data
+        const nextNumber = currentVersion.version_number + 1;
+        newVersion = await createVersion(profileId, nextNumber, {
+          riasec_attempt_id: currentVersion.riasec_attempt_id,
+          ability_attempt_id: currentVersion.ability_attempt_id,
+          big_five_attempt_id: currentVersion.big_five_attempt_id,
+          work_values_attempt_id: currentVersion.work_values_attempt_id,
+          [column]: attemptId, // Override with new attempt
+        }, `Added ${quizId} assessment`);
+      }
+
+      // Set as active version
+      await setActiveVersion(profileId, newVersion.id);
+
+      // Check if profile is now complete
+      await checkAndUpdateReadyStatus(profileId);
+
+      return newVersion;
+    } catch (e: any) {
+      if (e.message === 'VERSION_CONFLICT') {
+        retries--;
+        if (retries === 0) throw new Error('Failed to create version after multiple retries due to conflict.');
+        const updatedProfile = await getProfile(profileId);
+        if (updatedProfile) {
+          profile.active_version_id = updatedProfile.active_version_id;
+        }
+        continue;
+      }
+      throw e;
+    }
   }
-
-  // Set as active version
-  await setActiveVersion(profileId, newVersion.id);
-
-  // Check if profile is now complete
-  await checkAndUpdateReadyStatus(profileId);
-
-  return newVersion;
+  throw new Error('Unexpected error in attachAssessment');
 }
 
 /**
@@ -116,25 +133,42 @@ export async function createRevision(
   const column = ASSESSMENT_TO_VERSION_COLUMN[assessmentType];
   if (!column) throw new Error(`Unknown assessment type: ${assessmentType}`);
 
-  const currentVersion = profile.active_version_id
-    ? await getProfileVersion(profile.active_version_id)
-    : null;
+  let retries = 3;
+  while (retries > 0) {
+    const currentVersion = profile.active_version_id
+      ? await getProfileVersion(profile.active_version_id)
+      : null;
 
-  if (!currentVersion) throw new Error('No active version found for revision');
+    if (!currentVersion) throw new Error('No active version found for revision');
 
-  const nextNumber = currentVersion.version_number + 1;
-  const newVersion = await createVersion(profileId, nextNumber, {
-    riasec_attempt_id: currentVersion.riasec_attempt_id,
-    ability_attempt_id: currentVersion.ability_attempt_id,
-    big_five_attempt_id: currentVersion.big_five_attempt_id,
-    work_values_attempt_id: currentVersion.work_values_attempt_id,
-    [column]: newAttemptId, // Override with new attempt
-  }, reason || `Revised ${assessmentType}`);
+    try {
+      const nextNumber = currentVersion.version_number + 1;
+      const newVersion = await createVersion(profileId, nextNumber, {
+        riasec_attempt_id: currentVersion.riasec_attempt_id,
+        ability_attempt_id: currentVersion.ability_attempt_id,
+        big_five_attempt_id: currentVersion.big_five_attempt_id,
+        work_values_attempt_id: currentVersion.work_values_attempt_id,
+        [column]: newAttemptId, // Override with new attempt
+      }, reason || `Revised ${assessmentType}`);
 
-  // Set as active version
-  await setActiveVersion(profileId, newVersion.id);
+      // Set as active version
+      await setActiveVersion(profileId, newVersion.id);
 
-  return newVersion;
+      return newVersion;
+    } catch (e: any) {
+      if (e.message === 'VERSION_CONFLICT') {
+        retries--;
+        if (retries === 0) throw new Error('Failed to create version after multiple retries due to conflict.');
+        const updatedProfile = await getProfile(profileId);
+        if (updatedProfile) {
+          profile.active_version_id = updatedProfile.active_version_id;
+        }
+        continue;
+      }
+      throw e;
+    }
+  }
+  throw new Error('Unexpected error in createRevision');
 }
 
 // ---------- INTERNAL ----------
@@ -159,7 +193,12 @@ async function createVersion(
     .select()
     .single();
 
-  if (error) throw new Error(`Failed to create version: ${error.message}`);
+  if (error) {
+    if (error.code === '23505') {
+      throw new Error('VERSION_CONFLICT');
+    }
+    throw new Error(`Failed to create version: ${error.message}`);
+  }
   return data as ProfileVersion;
 }
 

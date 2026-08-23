@@ -118,11 +118,9 @@ export async function getCurrentReport(profileId: string): Promise<CareerReport 
 // ---------- STATUS ----------
 
 export async function markAllReportsOutdated(profileId: string): Promise<void> {
-  const { error } = await supabase
-    .from('career_reports')
-    .update({ status: 'OUTDATED' })
-    .eq('profile_id', profileId)
-    .eq('status', 'CURRENT');
+  const { error } = await supabase.rpc('mark_reports_outdated', {
+    p_profile_id: profileId,
+  });
 
   if (error) {
     console.error('Failed to mark reports as outdated:', error);
@@ -130,10 +128,9 @@ export async function markAllReportsOutdated(profileId: string): Promise<void> {
 }
 
 export async function markReportOutdated(reportId: string): Promise<void> {
-  const { error } = await supabase
-    .from('career_reports')
-    .update({ status: 'OUTDATED' })
-    .eq('id', reportId);
+  const { error } = await supabase.rpc('mark_single_report_outdated', {
+    p_report_id: reportId,
+  });
 
   if (error) throw new Error(`Failed to mark report: ${error.message}`);
 }

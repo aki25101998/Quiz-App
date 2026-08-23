@@ -3,10 +3,10 @@ import { Loader2, Plus, Clock, FileText, CheckCircle, QrCode } from 'lucide-reac
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { getProfiles, createProfile } from '../../services/profileService';
-import { attachAssessment, createRevision } from '../../services/profileVersionService';
-import { checkRevisionAllowed } from '../../services/quotaService';
+import { attachAssessment } from '../../services/profileVersionService';
+import { processProfileEdit, confirmPayment } from '../../services/paymentService';
 import { useAuth } from '../../hooks/useAuth';
-import type { ProfileWithMeta } from '../../types/profileTypes';
+import type { ProfileWithMeta, Payment } from '../../types/profileTypes';
 import { PROFILE_EDIT_PRICE } from '../../types/constants';
 
 interface SaveToProfileModalProps {
@@ -34,6 +34,7 @@ export const SaveToProfileModal: React.FC<SaveToProfileModalProps> = ({
   const [showPayment, setShowPayment] = useState(false);
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
   const [transferCode, setTransferCode] = useState('');
+  const [pendingPayment, setPendingPayment] = useState<Payment | null>(null);
 
   useEffect(() => {
     if (isOpen && user) {
@@ -80,15 +81,15 @@ export const SaveToProfileModal: React.FC<SaveToProfileModalProps> = ({
         await attachAssessment(profile.id, quizId, attemptId);
         onSaved(profile.id);
       } else {
-        // Paid profile: Check quota
-        const quotaInfo = await checkRevisionAllowed(user!.id, profile.id);
-        if (quotaInfo.isFree) {
-          await createRevision(profile.id, quizId, attemptId, `Cập nhật miễn phí: ${quizId}`);
+        // Paid profile: Orchestration via processProfileEdit
+        const result = await processProfileEdit(user!.id, profile.id, quizId, attemptId);
+        if (result.isFree) {
           onSaved(profile.id);
         } else {
           // Requires 20k payment
           setSelectedProfileId(profile.id);
-          setTransferCode(`EDIT${Math.floor(Math.random() * 900000) + 100000}`);
+          setPendingPayment(result.payment!);
+          setTransferCode(result.payment!.transfer_code);
           setShowPayment(true);
           setProcessing(false);
         }
@@ -100,12 +101,12 @@ export const SaveToProfileModal: React.FC<SaveToProfileModalProps> = ({
   };
 
   const handleConfirmPayment = async () => {
-    if (!selectedProfileId) return;
+    if (!selectedProfileId || !pendingPayment) return;
     setProcessing(true);
     try {
       // Mock payment verification
       await new Promise(resolve => setTimeout(resolve, 1500));
-      await createRevision(selectedProfileId, quizId, attemptId, `Cập nhật (Có phí 20k): ${quizId}`);
+      await confirmPayment(pendingPayment.id);
       onSaved(selectedProfileId);
     } catch (err: any) {
       setError(err.message || 'Lỗi xác nhận thanh toán');

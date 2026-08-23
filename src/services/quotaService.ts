@@ -77,21 +77,20 @@ export async function checkMonthlyFreeQuota(userId: string): Promise<{
  * Consume one free edit from the user's monthly quota.
  */
 export async function consumeFreeEdit(userId: string): Promise<void> {
-  const quota = await getMonthlyQuota(userId);
+  // Ensure quota exists first
+  await getMonthlyQuota(userId);
+  const monthKey = getCurrentMonthKey();
 
-  if (quota.free_edits_used >= quota.free_edits_allowed) {
-    throw new Error('Monthly free edit quota exhausted');
-  }
-
-  const { error } = await supabase
-    .from('user_monthly_quotas')
-    .update({
-      free_edits_used: quota.free_edits_used + 1,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', quota.id);
+  const { data: success, error } = await supabase.rpc('consume_free_edit', {
+    p_user_id: userId,
+    p_month_key: monthKey,
+  });
 
   if (error) throw new Error(`Failed to consume free edit: ${error.message}`);
+  
+  if (!success) {
+    throw new Error('Monthly free edit quota exhausted');
+  }
 }
 
 // ---------- FULL REVISION CHECK ----------

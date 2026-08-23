@@ -232,7 +232,7 @@ export default function ProfileReport() {
                   </div>
                 )}
 
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                   <div>
                     <h3 className="text-2xl font-bold text-slate-900 mb-2">{match.careerName}</h3>
                     <p className="text-slate-500 font-medium">{dbCareer?.description}</p>
@@ -243,6 +243,62 @@ export default function ProfileReport() {
                     </div>
                     <div className="text-3xl font-extrabold text-slate-800">
                       {match.score}<span className="text-lg text-slate-400 font-medium">/100</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Dimension Breakdown */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 mb-8 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                  <div className="text-center relative">
+                    <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Sở thích</div>
+                    <div className="text-xl font-bold text-teal-700">{match.dimensionScores.riasec || 0}%</div>
+                    <div className="w-full bg-slate-200 h-1.5 mt-2 rounded-full overflow-hidden">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        whileInView={{ width: `${match.dimensionScores.riasec || 0}%` }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 1, delay: 0.1 }}
+                        className="bg-teal-500 h-full" 
+                      />
+                    </div>
+                  </div>
+                  <div className="text-center relative md:border-l md:border-slate-200 md:pl-4">
+                    <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Năng lực</div>
+                    <div className="text-xl font-bold text-indigo-700">{match.dimensionScores.ability || 0}%</div>
+                    <div className="w-full bg-slate-200 h-1.5 mt-2 rounded-full overflow-hidden">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        whileInView={{ width: `${match.dimensionScores.ability || 0}%` }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 1, delay: 0.2 }}
+                        className="bg-indigo-500 h-full" 
+                      />
+                    </div>
+                  </div>
+                  <div className="text-center relative md:border-l md:border-slate-200 md:pl-4">
+                    <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Tính cách</div>
+                    <div className="text-xl font-bold text-rose-700">{match.dimensionScores.personality || 0}%</div>
+                    <div className="w-full bg-slate-200 h-1.5 mt-2 rounded-full overflow-hidden">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        whileInView={{ width: `${match.dimensionScores.personality || 0}%` }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 1, delay: 0.3 }}
+                        className="bg-rose-500 h-full" 
+                      />
+                    </div>
+                  </div>
+                  <div className="text-center relative md:border-l md:border-slate-200 md:pl-4">
+                    <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Giá trị</div>
+                    <div className="text-xl font-bold text-amber-700">{match.dimensionScores.workValues || 0}%</div>
+                    <div className="w-full bg-slate-200 h-1.5 mt-2 rounded-full overflow-hidden">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        whileInView={{ width: `${match.dimensionScores.workValues || 0}%` }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 1, delay: 0.4 }}
+                        className="bg-amber-500 h-full" 
+                      />
                     </div>
                   </div>
                 </div>

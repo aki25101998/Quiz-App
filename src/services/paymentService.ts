@@ -7,7 +7,7 @@ import type { Payment, PaymentProductType } from '../types/profileTypes';
 import { PROFILE_PRICE, PROFILE_EDIT_PRICE } from '../types/constants';
 import { updateProfileStatus, incrementRevisionUsed } from './profileService';
 import { createRevision } from './profileVersionService';
-import { consumeFreeEdit } from './quotaService';
+import { checkRevisionAllowed, consumeFreeEdit } from './quotaService';
 import { markAllReportsOutdated } from './careerReportService';
 
 // ---------- PAYMENT CREATION ----------
@@ -64,19 +64,70 @@ export async function confirmPayment(paymentId: string): Promise<Payment> {
 
   if (fetchError || !payment) throw new Error('Payment not found');
 
-  const { error: updateError } = await supabase
-    .from('payments')
-    .update({ status: 'PAID' })
-    .eq('id', paymentId);
+  // 1. Verify Payment with Gateway (Mock for testing mode)
+  const isVerified = await verifyPaymentGateway(payment);
+  if (!isVerified) throw new Error('Payment verification failed');
+
+  // 2. Mark Payment as PAID
+  const { error: updateError } = await supabase.rpc('update_payment_status', {
+    p_payment_id: paymentId,
+    p_status: 'PAID',
+  });
 
   if (updateError) throw new Error(`Failed to confirm payment: ${updateError.message}`);
 
-  // Apply business logic based on product type
+  const confirmedPayment = { ...payment, status: 'PAID' } as Payment;
+
+  // 3. Apply Business Logic
+  await applyPaymentBusinessLogic(confirmedPayment);
+
+  return confirmedPayment;
+}
+
+/**
+ * Mock verification with a payment gateway (e.g. VietQR webhook verifier)
+ */
+async function verifyPaymentGateway(payment: Payment): Promise<boolean> {
+  // Simulate network delay and validation
+  await new Promise(resolve => setTimeout(resolve, 500));
+  return payment.status === 'PENDING';
+}
+
+/**
+ * Apply the actual business logic once a payment is successfully PAID.
+ */
+async function applyPaymentBusinessLogic(payment: Payment): Promise<void> {
   if (payment.product_type === 'PROFILE_UNLOCK') {
     await updateProfileStatus(payment.reference_id, 'PAID');
+  } else if (payment.product_type === 'PROFILE_EDIT') {
+    // Find pending transaction
+    const { data: txs } = await supabase
+      .from('profile_edit_transactions')
+      .select('*')
+      .eq('profile_id', payment.reference_id)
+      .eq('payment_status', 'PENDING')
+      .order('created_at', { ascending: false })
+      .limit(1);
+      
+    if (txs && txs.length > 0) {
+      const tx = txs[0];
+      
+      // Update transaction
+      await supabase.rpc('update_tx_status', {
+        p_tx_id: tx.id,
+        p_status: 'PAID'
+      });
+      
+      // Create version
+      await createRevision(tx.profile_id, tx.assessment_type, tx.target_attempt_id, `Cập nhật (Có phí 20k): ${tx.assessment_type}`);
+      
+      // Increment counter
+      await incrementRevisionUsed(tx.profile_id);
+      
+      // Mark old reports outdated
+      await markAllReportsOutdated(tx.profile_id);
+    }
   }
-
-  return { ...payment, status: 'PAID' } as Payment;
 }
 
 /**
@@ -94,56 +145,67 @@ export async function confirmProfileUnlock(
 
 /**
  * Process a profile edit (paid or free).
- * Handles the full flow:
- * 1. Create new assessment attempt (already done before calling this)
- * 2. Check if free or paid
- * 3. Create new profile version
- * 4. Increment revision counter
- * 5. Mark old reports as outdated
- * 6. If free, consume monthly quota
- * 7. If paid, create and confirm payment
+ * Handles the full orchestration:
+ * 1. Validate quota
+ * 2. If free: consume quota, create transaction, create version, increment counter, outdate reports.
+ * 3. If paid: create PENDING payment, create PENDING transaction. (Version is created on confirm).
  */
 export async function processProfileEdit(
   userId: string,
   profileId: string,
   assessmentType: string,
-  newAttemptId: string,
-  isFree: boolean
-): Promise<{ version: any; payment?: Payment }> {
-  let payment: Payment | undefined;
-
-  // If paid edit, create and confirm payment
-  if (!isFree) {
-    payment = await createPayment(userId, 'PROFILE_EDIT', profileId);
-    await confirmPayment(payment.id);
-  } else {
-    // Consume free monthly edit
-    await consumeFreeEdit(userId);
+  newAttemptId: string
+): Promise<{ success: boolean; profileId: string; versionId?: string; isFree: boolean; payment?: Payment }> {
+  // 1. Validate
+  const check = await checkRevisionAllowed(profileId, userId);
+  if (!check.allowed) {
+    throw new Error(check.reason);
   }
 
-  // Record the edit transaction
-  await supabase.from('profile_edit_transactions').insert({
-    user_id: userId,
-    profile_id: profileId,
-    edit_type: 'MAJOR_REVISION',
-    assessment_type: assessmentType,
-    source_attempt_id: null, // Could track old attempt if needed
-    target_attempt_id: newAttemptId,
-    price: isFree ? 0 : PROFILE_EDIT_PRICE,
-    payment_status: isFree ? 'FREE' : 'PAID',
-    applied_at: new Date().toISOString(),
-  });
+  if (check.isFree) {
+    // FREE FLOW
+    // 1. Consume Free Edit
+    await consumeFreeEdit(userId);
+    
+    // 2. Create Edit Transaction (FREE)
+    await supabase.from('profile_edit_transactions').insert({
+      user_id: userId,
+      profile_id: profileId,
+      edit_type: 'MAJOR_REVISION',
+      assessment_type: assessmentType,
+      target_attempt_id: newAttemptId,
+      price: 0,
+      payment_status: 'FREE',
+      applied_at: new Date().toISOString(),
+    });
 
-  // Create new profile version (immutable — old version preserved)
-  const newVersion = await createRevision(profileId, assessmentType, newAttemptId);
+    // 3. Create Revision
+    const newVersion = await createRevision(profileId, assessmentType, newAttemptId, `Cập nhật miễn phí: ${assessmentType}`);
+    
+    // 4. Increment Revision Counter
+    await incrementRevisionUsed(profileId);
+    
+    // 5. Outdate Reports
+    await markAllReportsOutdated(profileId);
 
-  // Increment revision counter
-  await incrementRevisionUsed(profileId);
+    return { success: true, profileId, versionId: newVersion.id, isFree: true };
+  } else {
+    // PAID FLOW - Create Pending Payment
+    const payment = await createPayment(userId, 'PROFILE_EDIT', profileId, check.price);
+    
+    // Create pending edit transaction
+    await supabase.from('profile_edit_transactions').insert({
+      user_id: userId,
+      profile_id: profileId,
+      edit_type: 'MAJOR_REVISION',
+      assessment_type: assessmentType,
+      target_attempt_id: newAttemptId,
+      price: check.price,
+      payment_status: 'PENDING',
+    });
 
-  // Mark old reports as outdated
-  await markAllReportsOutdated(profileId);
-
-  return { version: newVersion, payment };
+    return { success: true, profileId, isFree: false, payment };
+  }
 }
 
 // ---------- QUERY ----------
