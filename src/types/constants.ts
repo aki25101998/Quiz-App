@@ -130,3 +130,38 @@ export function getScoreLabel(normalizedScore: number): string {
   if (normalizedScore >= 35) return 'Trung bình';
   return 'Thấp';
 }
+
+// ============================================================
+// PROFILE-BASED CAREER ASSESSMENT — Pricing & Limits
+// ============================================================
+
+/** Price to unlock a full Career Profile (VNĐ) */
+export const PROFILE_PRICE = 129000;
+
+/** Price for a paid profile edit when monthly free quota is exhausted (VNĐ) */
+export const PROFILE_EDIT_PRICE = 20000;
+
+/** Number of free minor edits per calendar month per user */
+export const MONTHLY_FREE_EDIT_LIMIT = 3;
+
+/** Maximum lifetime revisions allowed per paid Profile */
+export const PROFILE_REVISION_LIMIT = 3;
+
+/** Required assessment types for a Profile to be READY */
+export const REQUIRED_ASSESSMENTS = ['riasec', 'ability', 'big-five', 'work-values'] as const;
+
+/** Mapping from assessment quiz_id to ProfileVersion column */
+export const ASSESSMENT_TO_VERSION_COLUMN: Record<string, string> = {
+  'riasec': 'riasec_attempt_id',
+  'ability': 'ability_attempt_id',
+  'big-five': 'big_five_attempt_id',
+  'work-values': 'work_values_attempt_id',
+} as const;
+
+/** Human-readable labels for assessment types */
+export const ASSESSMENT_LABELS: Record<string, string> = {
+  'riasec': 'Sở thích nghề nghiệp (RIASEC)',
+  'ability': 'Năng lực tư duy (Ability)',
+  'big-five': 'Tính cách làm việc (Big Five)',
+  'work-values': 'Giá trị công việc (Work Values)',
+} as const;

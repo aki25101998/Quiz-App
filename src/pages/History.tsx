@@ -19,6 +19,7 @@ export default function History() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [results, setResults] = useState<QuizResult[]>([]);
+  const [usedAttemptIds, setUsedAttemptIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
@@ -78,6 +79,26 @@ export default function History() {
       if (!error && data) {
         setResults(data);
       }
+
+      // Fetch used attempt IDs
+      const { data: versionsData } = await supabase
+        .from('profile_versions')
+        .select('riasec_attempt_id, ability_attempt_id, big_five_attempt_id, work_values_attempt_id')
+        .in('profile_id', (
+          await supabase.from('profiles').select('id').eq('user_id', user.id)
+        ).data?.map(p => p.id) || []);
+
+      if (versionsData) {
+        const usedIds = new Set<string>();
+        versionsData.forEach(v => {
+          if (v.riasec_attempt_id) usedIds.add(v.riasec_attempt_id);
+          if (v.ability_attempt_id) usedIds.add(v.ability_attempt_id);
+          if (v.big_five_attempt_id) usedIds.add(v.big_five_attempt_id);
+          if (v.work_values_attempt_id) usedIds.add(v.work_values_attempt_id);
+        });
+        setUsedAttemptIds(usedIds);
+      }
+
       setLoading(false);
     }
     
@@ -265,15 +286,20 @@ export default function History() {
                 </div>
                 
                 <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
-                  {result.is_paid ? (
+                  {usedAttemptIds.has(result.id) ? (
+                    <div className="flex items-center gap-1.5 text-sm font-medium text-teal-600 bg-teal-50 px-3 py-1.5 rounded-full border border-teal-100">
+                      <FileText size={16} />
+                      Đã dùng trong Hồ sơ
+                    </div>
+                  ) : result.is_paid ? (
                     <div className="flex items-center gap-1.5 text-sm font-medium text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100">
                       <CheckCircle size={16} />
-                      Đã thanh toán
+                      Đã thanh toán (Legacy)
                     </div>
                   ) : (
                     <div className="flex items-center gap-1.5 text-sm font-medium text-amber-600 bg-amber-50 px-3 py-1.5 rounded-full border border-amber-100">
                       <AlertCircle size={16} />
-                      Chưa thanh toán
+                      Chưa gắn hồ sơ
                     </div>
                   )}
                   <div className="flex items-center gap-2">

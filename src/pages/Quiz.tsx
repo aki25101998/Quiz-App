@@ -3,12 +3,21 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QUIZ_DATA } from '../data/quizData';
 import { useQuiz } from '../hooks/useQuiz';
+import { useAuth } from '../hooks/useAuth';
+import { useProfiles } from '../hooks/useProfiles';
 import { ProgressBar } from '../components/ui/ProgressBar';
+import { ProfileSelectModal } from '../components/quiz/ProfileSelectModal';
+import { supabase } from '../lib/supabase';
+import { attachAssessment } from '../services/profileVersionService';
+import { createProfile } from '../services/profileService';
+import { CORE_QUIZ_IDS } from '../types/constants';
 
 export default function Quiz() {
   const { id } = useParams();
   const navigate = useNavigate();
   const quiz = QUIZ_DATA[id || ''];
+  const { user } = useAuth();
+  const { profiles } = useProfiles(user?.id);
 
   if (!quiz) {
     return <div className="min-h-screen flex items-center justify-center text-slate-500">Không tìm thấy bài test.</div>;
@@ -25,7 +34,12 @@ export default function Quiz() {
 
   const [hasStarted, setHasStarted] = useState(!quiz.introContent);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [completedAnswers, setCompletedAnswers] = useState<Record<string, string> | null>(null);
+  const [profileActionLoading, setProfileActionLoading] = useState(false);
   const currentQuestion = quiz.questions[currentIndex];
+
+  const isCoreQuiz = (CORE_QUIZ_IDS as readonly string[]).includes(id || '');
 
   const onSelectOption = (value: string) => {
     if (isTransitioning) return;
@@ -39,17 +53,102 @@ export default function Quiz() {
         setIsTransitioning(false);
       } else {
         const finalAnswers = { ...answers, [currentQuestion.id]: value };
-        navigate(`/checkout/${id}`, { state: { answers: finalAnswers, quiz_id: id } });
+        
+        // For core quizzes with logged-in user: show profile selection modal
+        if (isCoreQuiz && user) {
+          setCompletedAnswers(finalAnswers);
+          setShowProfileModal(true);
+          setIsTransitioning(false);
+        } else {
+          // Fun quizzes or anonymous: use legacy checkout flow
+          navigate(`/checkout/${id}`, { state: { answers: finalAnswers, quiz_id: id } });
+        }
       }
     }, 400);
   };
 
+  // Skip (Dev) — KEPT AS REQUIRED, uses legacy flow
   const handleSkip = () => {
     const mockAnswers: Record<string, string> = {};
     quiz.questions.forEach((q) => {
       mockAnswers[q.id] = q.options[Math.floor(Math.random() * q.options.length)].value;
     });
     navigate(`/checkout/${id}`, { state: { answers: mockAnswers, quiz_id: id } });
+  };
+
+  // Save quiz result to database (as assessment attempt)
+  const saveAttempt = async (answersToSave: Record<string, string>): Promise<string | null> => {
+    if (!user) return null;
+    const { data, error } = await supabase.from('quiz_results').insert({
+      user_id: user.id,
+      quiz_id: id,
+      answers: answersToSave,
+      is_paid: false, // assessment attempts are free; payment is per-profile
+    }).select('id').single();
+
+    if (error) {
+      console.error('Failed to save attempt:', error);
+      return null;
+    }
+    return data?.id || null;
+  };
+
+  // Handle profile selection from modal
+  const handleSelectProfile = async (profileId: string) => {
+    if (!completedAnswers || !user) return;
+    setProfileActionLoading(true);
+
+    try {
+      const attemptId = await saveAttempt(completedAnswers);
+      if (!attemptId) throw new Error('Failed to save attempt');
+
+      await attachAssessment(profileId, id || '', attemptId);
+      setShowProfileModal(false);
+      navigate(`/profiles/${profileId}`);
+    } catch (err) {
+      console.error('Failed to attach assessment:', err);
+      alert('Có lỗi xảy ra. Vui lòng thử lại.');
+    } finally {
+      setProfileActionLoading(false);
+    }
+  };
+
+  // Handle create new profile + attach
+  const handleCreateProfile = async (name: string) => {
+    if (!completedAnswers || !user) return;
+    setProfileActionLoading(true);
+
+    try {
+      const attemptId = await saveAttempt(completedAnswers);
+      if (!attemptId) throw new Error('Failed to save attempt');
+
+      const profile = await createProfile(user.id, name);
+      await attachAssessment(profile.id, id || '', attemptId);
+      setShowProfileModal(false);
+      navigate(`/profiles/${profile.id}`);
+    } catch (err) {
+      console.error('Failed to create profile:', err);
+      alert('Có lỗi xảy ra. Vui lòng thử lại.');
+    } finally {
+      setProfileActionLoading(false);
+    }
+  };
+
+  // Handle save to history only
+  const handleSaveHistoryOnly = async () => {
+    if (!completedAnswers) return;
+    setProfileActionLoading(true);
+
+    try {
+      await saveAttempt(completedAnswers);
+      setShowProfileModal(false);
+      // Navigate to legacy checkout for per-quiz result view
+      navigate(`/checkout/${id}`, { state: { answers: completedAnswers, quiz_id: id } });
+    } catch (err) {
+      console.error('Failed to save:', err);
+    } finally {
+      setProfileActionLoading(false);
+    }
   };
 
   if (!hasStarted && quiz.introContent) {
@@ -195,6 +294,19 @@ export default function Quiz() {
           </motion.div>
         </AnimatePresence>
       </div>
+
+      {/* Profile Select Modal — shown after completing a core quiz */}
+      <ProfileSelectModal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+        profiles={profiles}
+        quizTitle={quiz.title}
+        onSelectProfile={handleSelectProfile}
+        onCreateProfile={handleCreateProfile}
+        onSaveHistoryOnly={handleSaveHistoryOnly}
+        loading={profileActionLoading}
+      />
     </div>
   );
 }
+
