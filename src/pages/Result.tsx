@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLocation, useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { calculateMbtiResult } from '../utils/careerMatchingEngine';
-import { aggregateCareerResults } from '../utils/careerAggregator';
+import { aggregatePreviewCareerResultsFromLatest } from '../utils/careerAggregator';
 import type { QuizResultData } from '../utils/careerAggregator';
 import { UpsellCard } from '../components/quiz/UpsellCard';
 import { QUIZ_DATA } from '../data/quizData';
@@ -44,7 +44,7 @@ export default function Result() {
 
       if (!user) {
         if (answers) {
-          setSummary(aggregateCareerResults([{ quiz_id: id || '', answers, created_at: new Date().toISOString() } as QuizResultData]));
+          setSummary(aggregatePreviewCareerResultsFromLatest([{ quiz_id: id || '', answers, created_at: new Date().toISOString() } as QuizResultData]));
         }
         setLoading(false);
         return;
@@ -57,7 +57,7 @@ export default function Result() {
         .order('created_at', { ascending: false });
 
       if (!error && data) {
-        setSummary(aggregateCareerResults(data as QuizResultData[]));
+        setSummary(aggregatePreviewCareerResultsFromLatest(data as QuizResultData[]));
       }
       setLoading(false);
     }
