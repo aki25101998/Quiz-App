@@ -35,12 +35,12 @@ export default function Payment() {
     
     try {
       // Create result record in database
-      const { error } = await supabase.from('quiz_results').insert({
+      const { data, error } = await supabase.from('quiz_results').insert({
         user_id: user.id,
         quiz_id: id,
         answers: answers,
         is_paid: true
-      });
+      }).select('id').single();
 
       if (error) {
         console.error('Error saving result:', error);
@@ -48,7 +48,7 @@ export default function Payment() {
 
       setTimeout(() => {
         setIsVerifying(false);
-        navigate(`/result/${id}`, { state: { answers, paid: true, quiz_id: id } });
+        navigate(`/result/${id}`, { state: { answers, paid: true, quiz_id: id, attempt_id: data?.id } });
       }, 1500);
       
     } catch (error) {

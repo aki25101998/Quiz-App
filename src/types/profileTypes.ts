@@ -61,6 +61,8 @@ export interface CareerReport {
 export interface ReportSnapshot {
   profile_version_id: string;
   version_number: number;
+  engine_version: string;
+  career_database_version: string;
   riasec_attempt_id: string | null;
   ability_attempt_id: string | null;
   big_five_attempt_id: string | null;

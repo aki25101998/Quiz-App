@@ -10,6 +10,7 @@ import { RIASEC_LABELS, BIG_FIVE_LABELS, ABILITY_LABELS, WORK_VALUE_LABELS, ABIL
 import type { CareerMatchResult, DashboardSummary } from '../types/types';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
+import { SaveToProfileModal } from '../components/quiz/SaveToProfileModal';
 
 export default function Result() {
   const { id } = useParams();
@@ -23,6 +24,8 @@ export default function Result() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [mbtiResult, setMbtiResult] = useState<CareerMatchResult | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [hasPromptedSave, setHasPromptedSave] = useState(false);
 
   useEffect(() => {
     if (!answers || !isPaid) {
@@ -62,6 +65,13 @@ export default function Result() {
       fetchResults();
     }
   }, [user, authLoading, quiz, answers, id, isPaid]);
+
+  useEffect(() => {
+    if (!loading && quiz?.type !== 'fun' && !hasPromptedSave && user) {
+      setShowSaveModal(true);
+      setHasPromptedSave(true);
+    }
+  }, [loading, quiz, hasPromptedSave, user]);
 
   if (!quiz) return <div className="text-center py-20">Quiz không tồn tại</div>;
   if (!answers || !isPaid) return null; // Wait for redirect
@@ -137,6 +147,17 @@ export default function Result() {
                     </span>
                   </div>
                 )}
+              </div>
+            )}
+            
+            {quiz.type !== 'fun' && user && (
+              <div className="mt-6">
+                <button
+                  onClick={() => setShowSaveModal(true)}
+                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-slate-800 hover:bg-slate-900 text-white font-bold transition-colors shadow-lg"
+                >
+                  <span className="text-lg">💾</span> Lưu vào Hồ sơ định hướng
+                </button>
               </div>
             )}
           </div>
@@ -420,6 +441,15 @@ export default function Result() {
           <UpsellCard currentQuizId={id || ''} />
         )}
       </div>
+
+      {user && location.state?.attempt_id && quiz?.type !== 'fun' && (
+        <SaveToProfileModal
+          isOpen={showSaveModal}
+          onClose={() => setShowSaveModal(false)}
+          quizId={id || ''}
+          attemptId={location.state.attempt_id}
+        />
+      )}
     </div>
   );
 }

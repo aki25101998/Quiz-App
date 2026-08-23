@@ -5,7 +5,7 @@
 
 import type { DashboardSummary, CareerMatch } from '../types/types';
 import { CORE_QUIZ_IDS } from '../types/constants';
-import { buildCareerProfile, getMissingCoreQuizzes } from './profileAggregator';
+import { buildPreviewCareerProfileFromLatestResults, getMissingCoreQuizzes } from './profileAggregator';
 import { matchCareers } from './careerMatchingEngine';
 import { RIASEC_LABELS } from '../types/constants';
 
@@ -14,8 +14,8 @@ export type QuizResultData = {
   answers: Record<string, string>;
 };
 
-export function aggregateCareerResults(results: QuizResultData[]): DashboardSummary {
-  const profile = buildCareerProfile(results);
+export function aggregatePreviewCareerResultsFromLatest(results: QuizResultData[]): DashboardSummary {
+  const profile = buildPreviewCareerProfileFromLatestResults(results);
   const missingCore = getMissingCoreQuizzes(profile);
 
   const completedCore = profile.completedTests.filter(t =>

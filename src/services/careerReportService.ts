@@ -8,7 +8,7 @@ import type { CareerProfile } from '../types/types';
 import { getProfileVersion, getVersionAttempts } from './profileVersionService';
 import { buildCareerProfileFromVersion } from '../utils/profileAggregator';
 import { matchCareers } from '../utils/careerMatchingEngine';
-import { BIG_FIVE_LABELS, ABILITY_LABELS, WORK_VALUE_LABELS } from '../types/constants';
+import { CAREER_ENGINE_VERSION, CAREER_DATABASE_VERSION, BIG_FIVE_LABELS, ABILITY_LABELS, WORK_VALUE_LABELS } from '../types/constants';
 
 // ---------- GENERATE REPORT ----------
 
@@ -37,6 +37,8 @@ export async function generateReport(
   const snapshot: ReportSnapshot = {
     profile_version_id: versionId,
     version_number: version.version_number,
+    engine_version: CAREER_ENGINE_VERSION,
+    career_database_version: CAREER_DATABASE_VERSION,
     riasec_attempt_id: version.riasec_attempt_id,
     ability_attempt_id: version.ability_attempt_id,
     big_five_attempt_id: version.big_five_attempt_id,

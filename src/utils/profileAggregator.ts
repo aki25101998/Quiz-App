@@ -20,10 +20,12 @@ export type QuizResultInput = {
 };
 
 /**
+ * [NOT FOR OFFICIAL PROFILE/REPORT FLOW]
  * Build a CareerProfile from all quiz results a user has completed.
  * Takes the LATEST result for each quiz type (if duplicates exist).
+ * Only used for Preview, Dashboard, and legacy flows.
  */
-export function buildCareerProfile(results: QuizResultInput[]): CareerProfile {
+export function buildPreviewCareerProfileFromLatestResults(results: QuizResultInput[]): CareerProfile {
   const profile: CareerProfile = {
     completedTests: [],
     completeness: 0,

@@ -135,6 +135,12 @@ export function getScoreLabel(normalizedScore: number): string {
 // PROFILE-BASED CAREER ASSESSMENT — Pricing & Limits
 // ============================================================
 
+/** Version of the career matching engine */
+export const CAREER_ENGINE_VERSION = "v1.0.0";
+
+/** Version of the career database */
+export const CAREER_DATABASE_VERSION = "2026.08";
+
 /** Price to unlock a full Career Profile (VNĐ) */
 export const PROFILE_PRICE = 129000;
 
