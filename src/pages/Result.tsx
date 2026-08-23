@@ -26,6 +26,7 @@ export default function Result() {
   const [loading, setLoading] = useState(true);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [hasPromptedSave, setHasPromptedSave] = useState(false);
+  const [savedProfileId, setSavedProfileId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!answers || !isPaid) {
@@ -105,6 +106,21 @@ export default function Result() {
   return (
     <div className="w-full flex flex-col items-center">
       <div className="w-full max-w-4xl relative z-10">
+        {savedProfileId && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between shadow-sm"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-emerald-500 text-xl">✅</span>
+              <p className="text-emerald-800 font-medium">Kết quả đã được lưu thành công vào Hồ sơ!</p>
+            </div>
+            <Link to={`/profiles/${savedProfileId}`} className="px-4 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded-lg text-sm font-bold transition-colors whitespace-nowrap ml-4">
+              Xem Hồ sơ →
+            </Link>
+          </motion.div>
+        )}
         <div className="mb-6 flex justify-between items-center">
           <Link 
             to="/" 
@@ -446,6 +462,10 @@ export default function Result() {
         <SaveToProfileModal
           isOpen={showSaveModal}
           onClose={() => setShowSaveModal(false)}
+          onSaved={(profileId) => {
+            setShowSaveModal(false);
+            setSavedProfileId(profileId);
+          }}
           quizId={id || ''}
           attemptId={location.state.attempt_id}
         />

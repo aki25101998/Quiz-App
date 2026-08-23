@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Loader2, Plus, Clock, FileText, CheckCircle, QrCode } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
@@ -13,6 +12,7 @@ import { PROFILE_EDIT_PRICE } from '../../types/constants';
 interface SaveToProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSaved: (profileId: string) => void;
   quizId: string;
   attemptId: string;
 }
@@ -22,9 +22,9 @@ export const SaveToProfileModal: React.FC<SaveToProfileModalProps> = ({
   onClose,
   quizId,
   attemptId,
+  onSaved,
 }) => {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [profiles, setProfiles] = useState<ProfileWithMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
@@ -63,7 +63,7 @@ export const SaveToProfileModal: React.FC<SaveToProfileModalProps> = ({
     try {
       const newProfile = await createProfile(user.id, `Hồ sơ mới (${new Date().toLocaleDateString('vi-VN')})`);
       await attachAssessment(newProfile.id, quizId, attemptId);
-      navigate(`/profiles/${newProfile.id}`);
+      onSaved(newProfile.id);
     } catch (err: any) {
       setError(err.message || 'Lỗi tạo hồ sơ');
       setProcessing(false);
@@ -78,13 +78,13 @@ export const SaveToProfileModal: React.FC<SaveToProfileModalProps> = ({
       if (!profile.is_paid) {
         // Draft profile: Just attach (free)
         await attachAssessment(profile.id, quizId, attemptId);
-        navigate(`/profiles/${profile.id}`);
+        onSaved(profile.id);
       } else {
         // Paid profile: Check quota
         const quotaInfo = await checkRevisionAllowed(user!.id, profile.id);
         if (quotaInfo.isFree) {
           await createRevision(profile.id, quizId, attemptId, `Cập nhật miễn phí: ${quizId}`);
-          navigate(`/profiles/${profile.id}`);
+          onSaved(profile.id);
         } else {
           // Requires 20k payment
           setSelectedProfileId(profile.id);
@@ -106,7 +106,7 @@ export const SaveToProfileModal: React.FC<SaveToProfileModalProps> = ({
       // Mock payment verification
       await new Promise(resolve => setTimeout(resolve, 1500));
       await createRevision(selectedProfileId, quizId, attemptId, `Cập nhật (Có phí 20k): ${quizId}`);
-      navigate(`/profiles/${selectedProfileId}`);
+      onSaved(selectedProfileId);
     } catch (err: any) {
       setError(err.message || 'Lỗi xác nhận thanh toán');
       setProcessing(false);
