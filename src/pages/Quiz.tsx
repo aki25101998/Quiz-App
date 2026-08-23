@@ -11,7 +11,7 @@ import { supabase } from '../lib/supabase';
 import { attachAssessment } from '../services/profileVersionService';
 import { createProfile } from '../services/profileService';
 import { CORE_QUIZ_IDS } from '../types/constants';
-
+import { Check, ChevronDown } from 'lucide-react';
 export default function Quiz() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -29,7 +29,9 @@ export default function Quiz() {
     progress, 
     handleAnswer, 
     nextQuestion,
-    isLastQuestion 
+    isLastQuestion,
+    setAnswers,
+    setCurrentIndex
   } = useQuiz(quiz.questions.length);
 
   const [hasStarted, setHasStarted] = useState(!quiz.introContent);
@@ -37,6 +39,8 @@ export default function Quiz() {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [completedAnswers, setCompletedAnswers] = useState<Record<string, string> | null>(null);
   const [profileActionLoading, setProfileActionLoading] = useState(false);
+  const [isReviewing, setIsReviewing] = useState(false);
+  const [showSkipMenu, setShowSkipMenu] = useState(false);
   const currentQuestion = quiz.questions[currentIndex];
 
   const isCoreQuiz = (CORE_QUIZ_IDS as readonly string[]).includes(id || '');
@@ -53,27 +57,36 @@ export default function Quiz() {
         setIsTransitioning(false);
       } else {
         const finalAnswers = { ...answers, [currentQuestion.id]: value };
-        
-        // For core quizzes with logged-in user: show profile selection modal
-        if (isCoreQuiz && user) {
-          setCompletedAnswers(finalAnswers);
-          setShowProfileModal(true);
-          setIsTransitioning(false);
-        } else {
-          // Fun quizzes or anonymous: use legacy checkout flow
-          navigate(`/checkout/${id}`, { state: { answers: finalAnswers, quiz_id: id } });
-        }
+        setAnswers(finalAnswers);
+        setIsReviewing(true);
+        setIsTransitioning(false);
       }
     }, 400);
   };
 
-  // Skip (Dev) — KEPT AS REQUIRED, uses legacy flow
-  const handleSkip = () => {
+  // Skip (Dev)
+  const handleSkip = (mode: number | 'random') => {
     const mockAnswers: Record<string, string> = {};
     quiz.questions.forEach((q) => {
-      mockAnswers[q.id] = q.options[Math.floor(Math.random() * q.options.length)].value;
+      if (mode === 'random') {
+        mockAnswers[q.id] = q.options[Math.floor(Math.random() * q.options.length)].value;
+      } else {
+        mockAnswers[q.id] = q.options[mode] ? q.options[mode].value : q.options[q.options.length - 1].value;
+      }
     });
-    navigate(`/checkout/${id}`, { state: { answers: mockAnswers, quiz_id: id } });
+    setAnswers(mockAnswers);
+    setIsReviewing(true);
+    setShowSkipMenu(false);
+    setCurrentIndex(quiz.questions.length - 1);
+  };
+
+  const handleFinalSubmit = () => {
+    if (isCoreQuiz && user) {
+      setCompletedAnswers(answers);
+      setShowProfileModal(true);
+    } else {
+      navigate(`/checkout/${id}`, { state: { answers, quiz_id: id } });
+    }
   };
 
   // Save quiz result to database (as assessment attempt)
@@ -198,20 +211,150 @@ export default function Quiz() {
     );
   }
 
+  if (isReviewing) {
+    return (
+      <div className="w-full max-w-4xl mx-auto pb-20 px-4">
+        <div className="mb-8 text-center pt-8">
+          <h2 className="text-3xl font-extrabold text-slate-800 mb-2">Xem lại câu trả lời</h2>
+          <p className="text-slate-500 text-lg">Bạn có thể điều chỉnh nhanh các lựa chọn trước khi nộp bài.</p>
+        </div>
+
+        <div className="space-y-6">
+          {quiz.questions.map((q, qIndex) => (
+            <div key={q.id} className="bg-white/90 backdrop-blur-xl rounded-2xl p-6 md:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100">
+              <div className="flex flex-col gap-6">
+                <div className="flex gap-4 items-start">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center font-bold">
+                    {qIndex + 1}
+                  </div>
+                  <p className="text-lg font-medium text-slate-800 flex-1 pt-1">{q.text}</p>
+                </div>
+                
+                {quiz.originalType === 'likert' ? (
+                  <div className="w-full max-w-2xl mx-auto pl-12">
+                    <div className="flex justify-between items-center px-2 mb-4">
+                      <span className="text-[10px] md:text-xs font-bold text-rose-500 uppercase tracking-widest w-1/3 text-left leading-tight">
+                        {q.options[0].label.replace(/^[^\wÀ-ỹ]+/, '').trim()}
+                      </span>
+                      <span className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest w-1/3 text-center leading-tight">
+                        {q.options[Math.floor(q.options.length / 2)].label.replace(/^[^\wÀ-ỹ]+/, '').trim()}
+                      </span>
+                      <span className="text-[10px] md:text-xs font-bold text-teal-500 uppercase tracking-widest w-1/3 text-right leading-tight">
+                        {q.options[q.options.length - 1].label.replace(/^[^\wÀ-ỹ]+/, '').trim()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center relative">
+                      <div className="absolute top-1/2 left-[10%] right-[10%] h-0.5 bg-slate-100 -z-10 transform -translate-y-1/2 rounded-full hidden sm:block"></div>
+                      {q.options.map((opt, oIndex) => {
+                        const isSelected = answers[q.id] === opt.value;
+                        const colors = [
+                          'bg-rose-100 border-rose-400 text-rose-500',
+                          'bg-orange-100 border-orange-400 text-orange-500',
+                          'bg-slate-100 border-slate-400 text-slate-600',
+                          'bg-lime-100 border-lime-400 text-lime-500',
+                          'bg-teal-100 border-teal-400 text-teal-500'
+                        ];
+                        const defaultColors = [
+                          'bg-white border-rose-200 hover:border-rose-400 hover:bg-rose-50 text-transparent',
+                          'bg-white border-orange-200 hover:border-orange-400 hover:bg-orange-50 text-transparent',
+                          'bg-white border-slate-200 hover:border-slate-400 hover:bg-slate-50 text-transparent',
+                          'bg-white border-lime-200 hover:border-lime-400 hover:bg-lime-50 text-transparent',
+                          'bg-white border-teal-200 hover:border-teal-400 hover:bg-teal-50 text-transparent'
+                        ];
+                        const colorClass = isSelected ? colors[oIndex] : defaultColors[oIndex];
+                        
+                        return (
+                          <button
+                            key={opt.value}
+                            onClick={() => handleAnswer(q.id, opt.value)}
+                            title={opt.label}
+                            className={`w-8 h-8 md:w-12 md:h-12 rounded-full border-[3px] transition-all flex items-center justify-center shadow-sm ${colorClass}`}
+                          >
+                            {isSelected && <Check className="w-5 h-5 md:w-7 md:h-7" strokeWidth={3} />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:pl-12">
+                    {q.options.map((opt) => (
+                      <button
+                        key={opt.value}
+                        onClick={() => handleAnswer(q.id, opt.value)}
+                        className={`p-4 rounded-xl border-2 text-left transition-all ${answers[q.id] === opt.value ? 'border-teal-500 bg-teal-50 font-medium text-teal-900 shadow-[0_4px_12px_rgb(20,184,166,0.15)]' : 'border-slate-200 hover:border-teal-200 bg-white text-slate-600 hover:text-slate-900'}`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-12 flex justify-center sticky bottom-6 z-10">
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleFinalSubmit}
+            className="px-10 py-4 bg-slate-800 text-white font-bold text-lg rounded-full shadow-lg shadow-slate-900/20 hover:bg-slate-900 transition-colors flex items-center gap-2"
+          >
+            Hoàn thành <Check className="w-5 h-5" />
+          </motion.button>
+        </div>
+
+        {/* Profile Select Modal */}
+        <ProfileSelectModal
+          isOpen={showProfileModal}
+          onClose={() => setShowProfileModal(false)}
+          profiles={profiles}
+          quizTitle={quiz.title}
+          onSelectProfile={handleSelectProfile}
+          onCreateProfile={handleCreateProfile}
+          onSaveHistoryOnly={handleSaveHistoryOnly}
+          loading={profileActionLoading}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="w-full">
       <div className="mb-8 flex flex-col gap-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between relative z-50">
           <div>
             <h1 className="text-2xl font-bold text-slate-800">{quiz.title}</h1>
             <p className="text-sm text-slate-500 mt-1">{quiz.description}</p>
           </div>
-          <button 
-            onClick={handleSkip}
-            className="text-xs bg-slate-200 hover:bg-slate-300 text-slate-600 px-3 py-1.5 rounded-full transition-colors font-medium opacity-70 hover:opacity-100"
-          >
-            Skip (Dev)
-          </button>
+          <div className="relative">
+            <button 
+              onClick={() => setShowSkipMenu(!showSkipMenu)}
+              className="flex items-center gap-1 text-xs bg-slate-200 hover:bg-slate-300 text-slate-600 px-3 py-1.5 rounded-full transition-colors font-medium opacity-70 hover:opacity-100"
+            >
+              Skip (Dev) <ChevronDown className="w-3 h-3" />
+            </button>
+            {showSkipMenu && (
+              <div className="absolute right-0 mt-2 w-32 bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-100 py-2 z-50 overflow-hidden">
+                {quiz.questions[0]?.options.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => handleSkip(idx)}
+                    className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-teal-50 hover:text-teal-700 transition-colors"
+                  >
+                    Full {String.fromCharCode(65 + idx)}
+                  </button>
+                ))}
+                <button
+                  onClick={() => handleSkip('random')}
+                  className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-teal-50 hover:text-teal-700 transition-colors border-t border-slate-100 mt-1 pt-3"
+                >
+                  Random
+                </button>
+              </div>
+            )}
+          </div>
         </div>
         <ProgressBar progress={progress} showLabel />
         <div className="text-slate-500 text-sm font-medium text-right">

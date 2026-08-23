@@ -33,6 +33,8 @@ export function useQuiz(totalQuestions: number) {
     progress,
     handleAnswer,
     nextQuestion,
-    prevQuestion
+    prevQuestion,
+    setAnswers,
+    setCurrentIndex
   };
 }
