@@ -6,7 +6,6 @@ import Quiz from './pages/Quiz';
 import Payment from './pages/Payment';
 import Result from './pages/Result';
 import Login from './pages/Login';
-import History from './pages/History';
 import Guide from './pages/Guide';
 import FinalReport from './pages/FinalReport';
 import Profiles from './pages/Profiles';
@@ -20,7 +19,6 @@ function App() {
       <Routes>
         <Route path="/" element={<MainLayout><Home /></MainLayout>} />
         <Route path="/login" element={<MainLayout><Login /></MainLayout>} />
-        <Route path="/history" element={<MainLayout><History /></MainLayout>} />
         <Route path="/guide" element={<MainLayout><Guide /></MainLayout>} />
         <Route path="/quiz/:id" element={<QuizLayout><Quiz /></QuizLayout>} />
         <Route path="/checkout/:id" element={<MainLayout><Payment /></MainLayout>} />

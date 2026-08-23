@@ -28,9 +28,6 @@ export default function Navbar() {
             <Link to="/profiles" className="text-sm font-medium text-slate-600 hover:text-teal-600 transition-colors hidden sm:block">
               Hồ sơ
             </Link>
-            <Link to="/history" className="text-sm font-medium text-slate-600 hover:text-orange-500 transition-colors hidden md:block">
-              Lịch sử bài làm
-            </Link>
             <div className="flex items-center gap-2">
               {user.user_metadata?.avatar_url && (
                 <img 
