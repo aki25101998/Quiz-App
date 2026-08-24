@@ -72,17 +72,20 @@ export async function attachAssessment(
       ? await getProfileVersion(profile.active_version_id)
       : null;
 
+    const allVersions = await getProfileVersions(profileId);
+    const maxVersionNumber = allVersions.length > 0 ? allVersions[0].version_number : 0;
+    const nextNumber = Math.max(maxVersionNumber + 1, currentVersion ? currentVersion.version_number + 1 : 1);
+
     let newVersion: ProfileVersion;
 
     try {
       if (!currentVersion) {
         // Create first version
-        newVersion = await createVersion(profileId, 1, {
+        newVersion = await createVersion(profileId, nextNumber, {
           [column]: attemptId,
         }, 'Initial assessment');
       } else {
         // Update existing draft version by creating a new one with merged data
-        const nextNumber = currentVersion.version_number + 1;
         newVersion = await createVersion(profileId, nextNumber, {
           riasec_attempt_id: currentVersion.riasec_attempt_id,
           ability_attempt_id: currentVersion.ability_attempt_id,
@@ -141,8 +144,11 @@ export async function createRevision(
 
     if (!currentVersion) throw new Error('No active version found for revision');
 
+    const allVersions = await getProfileVersions(profileId);
+    const maxVersionNumber = allVersions.length > 0 ? allVersions[0].version_number : 0;
+    const nextNumber = Math.max(maxVersionNumber + 1, currentVersion.version_number + 1);
+
     try {
-      const nextNumber = currentVersion.version_number + 1;
       const newVersion = await createVersion(profileId, nextNumber, {
         riasec_attempt_id: currentVersion.riasec_attempt_id,
         ability_attempt_id: currentVersion.ability_attempt_id,
